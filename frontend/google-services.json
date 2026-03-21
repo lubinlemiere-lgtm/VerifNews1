@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "437256815606",
+    "project_id": "verifnews-36487",
+    "storage_bucket": "verifnews-36487.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437256815606:android:0506f5f9a55d5fc321bdd7",
+        "android_client_info": {
+          "package_name": "com.lubin50.verifnews"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxerkT2igqrBWgcCptN2MQUAXq8N9eUiQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

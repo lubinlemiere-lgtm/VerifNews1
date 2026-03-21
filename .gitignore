@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Node
+node_modules/
+.expo/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Audio cache
+audio_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+pgdata/

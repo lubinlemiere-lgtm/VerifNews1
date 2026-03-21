@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "VerifNews",
+    "slug": "verifnews",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "verifnews",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A2E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.verifnews.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1A1A2E"
+      },
+      "package": "com.verifnews.app",
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1A1A2E"
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3265708280232482~1974668740",
+          "iosAppId": "ca-app-pub-3265708280232482~1974668740"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "508a8a1d-04db-411f-8f5b-30b7fcbcc3c0"
+      },
+      "router": {
+        "origin": false
+      }
+    },
+    "owner": "lubin50"
+  }
+}

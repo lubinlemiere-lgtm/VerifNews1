@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.expo/
+.env
+.env.local
+*.log
+*.tsbuildinfo
+android/
+ios/
+*.apk
+*.aab
+*.jks
+package-lock.json

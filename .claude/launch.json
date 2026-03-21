@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "verifnews-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npx", "expo", "start", "--web", "--port", "8087"],
+      "cwd": "frontend",
+      "port": 8087
+    }
+  ]
+}
