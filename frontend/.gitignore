@@ -11,3 +11,5 @@ ios/
 *.aab
 *.jks
 package-lock.json
+google-services.json
+GoogleService-Info.plist

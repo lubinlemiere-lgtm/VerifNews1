@@ -62,7 +62,7 @@ app = FastAPI(
 # Trusted hosts (prevents host header injection)
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "10.0.2.2", "*.verifnews.app"],
+    allowed_hosts=["localhost", "127.0.0.1", "10.0.2.2", "*.verifnews.app", "*.onrender.com"],
 )
 
 # CORS: restrict to known origins only
@@ -74,6 +74,7 @@ app.add_middleware(
         "http://127.0.0.1:8081",
         "http://10.0.2.2:8081",
         "https://verifnews.app",
+        "https://*.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],

@@ -10,7 +10,10 @@ from app.database import Base
 from app.models import *  # noqa: F401,F403 - import all models for autogenerate
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Ajoute prepared_statement_cache_size=0 pour PgBouncer Supabase
+_url = settings.DATABASE_URL
+_sep = "&" if "?" in _url else "?"
+config.set_main_option("sqlalchemy.url", _url + _sep + "prepared_statement_cache_size=0")
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -32,10 +35,15 @@ def do_run_migrations(connection):
 
 
 async def run_async_migrations():
+    """Lance les migrations avec connexion compatible PgBouncer Supabase."""
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # Obligatoire pour Supabase PgBouncer : desactiver le cache de prepared statements
+        connect_args={
+            "statement_cache_size": 0,
+        },
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

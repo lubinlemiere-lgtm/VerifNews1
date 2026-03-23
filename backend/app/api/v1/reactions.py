@@ -90,7 +90,6 @@ async def set_reaction(
 async def get_reactions(
     article_id: str,
     db: AsyncSession = Depends(get_db),
-    user: User | None = None,
 ):
     """Compter les likes/dislikes d'un article."""
     likes_q = await db.execute(

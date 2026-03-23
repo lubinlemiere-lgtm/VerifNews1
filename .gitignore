@@ -24,3 +24,11 @@ Thumbs.db
 
 # Docker
 pgdata/
+
+# Firebase / Google Services (contient des cles API)
+google-services.json
+GoogleService-Info.plist
+
+# Tests / Cache
+.pytest_cache/
+*.pyc
