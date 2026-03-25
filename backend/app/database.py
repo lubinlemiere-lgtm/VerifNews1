@@ -10,15 +10,10 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 
 
-def _build_url(url: str) -> str:
-    """Ajoute prepared_statement_cache_size=0 a l'URL pour PgBouncer."""
-    sep = "&" if "?" in url else "?"
-    return url + sep + "prepared_statement_cache_size=0"
-
-
 # Supabase free tier via PgBouncer : NullPool + pas de prepared statements
+# statement_cache_size=0 desactive le cache de prepared statements (requis pour PgBouncer)
 engine = create_async_engine(
-    _build_url(settings.DATABASE_URL),
+    settings.DATABASE_URL,
     echo=False,
     poolclass=NullPool,
     connect_args={
