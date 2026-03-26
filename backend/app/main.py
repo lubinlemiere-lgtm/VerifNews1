@@ -44,9 +44,15 @@ async def lifespan(app: FastAPI):
         logger.info("SQL cosine_similarity function created/updated.")
     except Exception as e:
         logger.warning(f"Could not create cosine_similarity function: {e}")
-    start_scheduler()
+    try:
+        start_scheduler()
+    except Exception as e:
+        logger.warning(f"Scheduler failed to start: {e}")
     yield
-    stop_scheduler()
+    try:
+        stop_scheduler()
+    except Exception:
+        pass
     logger.info("VerifNews API shutting down.")
 
 
