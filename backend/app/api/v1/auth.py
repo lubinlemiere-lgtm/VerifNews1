@@ -11,11 +11,12 @@
 # ###########################################################################
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select, delete as sa_delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -87,26 +88,38 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-    # Check if the refresh token has been revoked
     old_jti = payload.get("jti")
-    if old_jti:
+    subject = payload["sub"]
+
+    # Atomically blacklist the old refresh token (rotation).
+    # INSERT ... ON CONFLICT DO NOTHING prevents a race condition where
+    # two concurrent requests reuse the same refresh token.
+    old_exp = payload.get("exp")
+    if old_jti and old_exp:
+        stmt = pg_insert(TokenBlacklist).values(
+            jti=old_jti,
+            token_type="refresh",
+            expires_at=datetime.fromtimestamp(old_exp, tz=timezone.utc),
+        ).on_conflict_do_nothing(index_elements=["jti"])
+        result = await db.execute(stmt)
+        await db.commit()
+
+        if result.rowcount == 0:
+            # Token was already blacklisted by another concurrent request
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has already been used",
+            )
+    elif old_jti:
+        # Token has no exp claim — check manually if already blacklisted
         blacklisted = await db.execute(
             select(TokenBlacklist).where(TokenBlacklist.jti == old_jti)
         )
         if blacklisted.scalar_one_or_none():
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has been revoked")
-
-    subject = payload["sub"]
-
-    # Blacklist the old refresh token (rotation)
-    old_exp = payload.get("exp")
-    if old_jti and old_exp:
-        db.add(TokenBlacklist(
-            jti=old_jti,
-            token_type="refresh",
-            expires_at=datetime.utcfromtimestamp(old_exp),
-        ))
-        await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has been revoked",
+            )
 
     return TokenResponse(
         access_token=create_access_token(subject),
@@ -124,7 +137,7 @@ async def forgot_password(
     """
     Request a password reset. Generates a 15-min JWT reset token.
     Always returns 200 to prevent email enumeration attacks.
-    TODO: Wire up a real email service (SendGrid, SES, etc.) to send the link.
+    Email is sent via email_service (requires SMTP_HOST/SMTP_USER/SMTP_PASSWORD env vars).
     """
     ip = _get_client_ip(request)
     if auth_limiter.is_rate_limited(f"forgot:{ip}"):
@@ -141,7 +154,12 @@ async def forgot_password(
         reset_token = create_reset_token(str(user.id))
         sent = await send_password_reset_email(user.email, reset_token)
         if not sent:
-            logger.warning("Could not send reset email to %s (SMTP not configured?)", data.email)
+            logger.warning(
+                "⚠️ Password reset requested but email NOT sent to %s — "
+                "check SMTP configuration (SMTP_HOST, SMTP_USER, SMTP_PASSWORD). "
+                "The user will NOT receive a reset link.",
+                user.email,
+            )
 
     # Always return success to prevent email enumeration
     return {"message": "If an account exists with this email, a reset link has been sent."}
@@ -243,7 +261,7 @@ async def logout(
                 blacklisted = TokenBlacklist(
                     jti=jti,
                     token_type="access",
-                    expires_at=datetime.utcfromtimestamp(exp),
+                    expires_at=datetime.fromtimestamp(exp, tz=timezone.utc),
                 )
                 db.add(blacklisted)
         except Exception:
@@ -288,7 +306,7 @@ async def update_push_token(
         raise HTTPException(400, "Invalid push token format")
 
     current_user.push_token = token
-    current_user.push_token_updated_at = datetime.utcnow()
+    current_user.push_token_updated_at = datetime.now(timezone.utc)
     db.add(current_user)
     await db.commit()
     return {"status": "ok"}
@@ -332,5 +350,5 @@ async def export_data(
             "created_at": user.created_at.isoformat() if user.created_at else None,
         },
         "bookmarks": bookmarks,
-        "exported_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "exported_at": datetime.now(timezone.utc).isoformat(),
     }

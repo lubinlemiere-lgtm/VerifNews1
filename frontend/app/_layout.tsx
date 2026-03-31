@@ -8,8 +8,11 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
+
+SplashScreen.preventAutoHideAsync();
 
 import { useAuthStore } from "@/store/authStore";
 import { useBookmarkStore } from "@/store/bookmarkStore";
@@ -36,7 +39,9 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutInner() {
-  const { isAuthenticated, user, loadUser } = useAuthStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const loadUser = useAuthStore((s) => s.loadUser);
   const loadBookmarks = useBookmarkStore((s) => s.loadBookmarks);
   const loadReactions = useReactionStore((s) => s.loadReactions);
   const loadTheme = useThemeStore((s) => s.loadTheme);
@@ -45,6 +50,7 @@ function RootLayoutInner() {
   const loadCountry = usePreferencesStore((s) => s.loadCountry);
   const loadDefaultCategory = usePreferencesStore((s) => s.loadDefaultCategory);
   const loadTtsSpeed = usePreferencesStore((s) => s.loadTtsSpeed);
+  const loadTtsEnabled = usePreferencesStore((s) => s.loadTtsEnabled);
   const loadTextSize = useTextSizeStore((s) => s.loadSize);
   const loadQuizHistory = useQuizHistoryStore((s) => s.loadHistory);
   const loadNotifPrefs = useNotificationStore((s) => s.loadPrefs);
@@ -56,19 +62,24 @@ function RootLayoutInner() {
   useNotifications();
 
   useEffect(() => {
-    // Tout est non-bloquant: loadUser() met a jour auth en arriere-plan
-    loadUser();
-    loadBookmarks();
-    loadReactions();
-    loadTheme();
-    loadLanguage();
-    loadCountry();
-    loadDefaultCategory();
-    loadTtsSpeed();
-    loadTextSize();
-    loadQuizHistory();
-    loadNotifPrefs();
-    loadGamification().then(() => checkStreak());
+    // Charger tous les stores puis cacher le splash screen natif
+    Promise.all([
+      loadUser(),
+      loadBookmarks(),
+      loadReactions(),
+      loadTheme(),
+      loadLanguage(),
+      loadCountry(),
+      loadDefaultCategory(),
+      loadTtsSpeed(),
+      loadTtsEnabled(),
+      loadTextSize(),
+      loadQuizHistory(),
+      loadNotifPrefs(),
+      loadGamification().then(() => checkStreak()),
+    ]).finally(() => {
+      SplashScreen.hideAsync();
+    });
   }, []);
 
   // Quand l'utilisateur est connecte ET qu'on a ses infos → WelcomeSplash

@@ -43,6 +43,7 @@ import {
   APP_SHARE_MESSAGE_EN,
 } from "@/constants/config";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { withOpacity } from "@/utils/colors";
 
 // ── Language options ────────────────────────────────────────────────────
 const LANG_OPTIONS = [
@@ -127,18 +128,22 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const loadUser = useAuthStore((s) => s.loadUser);
-  const { mode, toggleTheme } = useThemeStore();
-  const { choice, setLanguage } = useLanguageStore();
-  const { size: textSize, setSize: setTextSize } = useTextSizeStore();
-  const {
-    categories,
-    defaultCategory,
-    ttsSpeed,
-    setDefaultCategory,
-    setTtsSpeed,
-  } = usePreferencesStore();
+  const mode = useThemeStore((s) => s.mode);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const choice = useLanguageStore((s) => s.choice);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const textSize = useTextSizeStore((s) => s.size);
+  const setTextSize = useTextSizeStore((s) => s.setSize);
+  const categories = usePreferencesStore((s) => s.categories);
+  const defaultCategory = usePreferencesStore((s) => s.defaultCategory);
+  const ttsSpeed = usePreferencesStore((s) => s.ttsSpeed);
+  const ttsEnabled = usePreferencesStore((s) => s.ttsEnabled);
+  const setDefaultCategory = usePreferencesStore((s) => s.setDefaultCategory);
+  const setTtsSpeed = usePreferencesStore((s) => s.setTtsSpeed);
+  const setTtsEnabled = usePreferencesStore((s) => s.setTtsEnabled);
 
   // ── Edit name state ─────────────────────────────────────────────────
   const [nameModalVisible, setNameModalVisible] = useState(false);
@@ -368,11 +373,28 @@ export default function SettingsScreen() {
         <SectionHeader title={t("settings.audio")} />
         <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SettingRow
-            icon="speedometer-outline"
-            label={t("settings.ttsSpeed")}
-            value={ttsSpeed === 1 ? "1x" : ttsSpeed + "x"}
-            onPress={() => setTtsSpeedModalVisible(true)}
+            icon="volume-high-outline"
+            label={t("settings.ttsEnabled")}
+            rightElement={
+              <Switch
+                value={ttsEnabled}
+                onValueChange={setTtsEnabled}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#fff"
+              />
+            }
           />
+          {ttsEnabled && (
+            <>
+              <RowSeparator />
+              <SettingRow
+                icon="speedometer-outline"
+                label={t("settings.ttsSpeed")}
+                value={ttsSpeed === 1 ? "1x" : ttsSpeed + "x"}
+                onPress={() => setTtsSpeedModalVisible(true)}
+              />
+            </>
+          )}
         </View>
 
         {/* ═══════════════════════════════════════════════════════════
@@ -437,7 +459,7 @@ export default function SettingsScreen() {
         {isAuthenticated && (
           <>
             <SectionHeader title={t("settings.dangerZone")} />
-            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.danger + "40" }]}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: withOpacity(colors.danger, 0.25) }]}>
               <SettingRow
                 icon="download-outline"
                 label={t("settings.exportData")}
@@ -657,7 +679,7 @@ export default function SettingsScreen() {
                   key={opt.value}
                   style={[
                     styles.langOption,
-                    isSelected && { backgroundColor: colors.primary + "15" },
+                    isSelected && { backgroundColor: withOpacity(colors.primary, 0.08) },
                   ]}
                   onPress={() => {
                     setLanguage(opt.value);
@@ -704,7 +726,7 @@ export default function SettingsScreen() {
                   key={opt.value}
                   style={[
                     styles.langOption,
-                    isSelected && { backgroundColor: colors.primary + "15" },
+                    isSelected && { backgroundColor: withOpacity(colors.primary, 0.08) },
                   ]}
                   onPress={() => {
                     setTextSize(opt.value);
@@ -754,7 +776,7 @@ export default function SettingsScreen() {
               <Pressable
                 style={[
                   styles.langOption,
-                  defaultCategory === "all" && { backgroundColor: colors.primary + "15" },
+                  defaultCategory === "all" && { backgroundColor: withOpacity(colors.primary, 0.08) },
                 ]}
                 onPress={() => {
                   setDefaultCategory("all");
@@ -779,7 +801,7 @@ export default function SettingsScreen() {
               <Pressable
                 style={[
                   styles.langOption,
-                  defaultCategory === "favorites" && { backgroundColor: colors.primary + "15" },
+                  defaultCategory === "favorites" && { backgroundColor: withOpacity(colors.primary, 0.08) },
                 ]}
                 onPress={() => {
                   setDefaultCategory("favorites");
@@ -811,7 +833,7 @@ export default function SettingsScreen() {
                     key={cat.slug}
                     style={[
                       styles.langOption,
-                      isSelected && { backgroundColor: colors.primary + "15" },
+                      isSelected && { backgroundColor: withOpacity(colors.primary, 0.08) },
                     ]}
                     onPress={() => {
                       setDefaultCategory(cat.slug);
@@ -875,7 +897,7 @@ export default function SettingsScreen() {
                   key={speed}
                   style={[
                     styles.langOption,
-                    isSelected && { backgroundColor: colors.primary + "15" },
+                    isSelected && { backgroundColor: withOpacity(colors.primary, 0.08) },
                   ]}
                   onPress={() => {
                     setTtsSpeed(speed);
@@ -1013,8 +1035,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    // @ts-ignore — supprime l'outline orange sur web
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
 
   // ── Save button ─────────────────────────────────────────────────────

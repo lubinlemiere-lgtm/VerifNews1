@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
+# Tracks tokens that Expo flagged as DeviceNotRegistered.
+# Populated by send_push / send_push_batch, drained by cleanup_dead_tokens.
+_dead_tokens: set[str] = set()
+
 
 # ── Envoi unitaire ─────────────────────────────────────────────────────
 async def send_push(token: str, title: str, body: str, data: Optional[dict] = None, channel: str = "default") -> bool:
@@ -48,7 +52,7 @@ async def send_push(token: str, title: str, body: str, data: Optional[dict] = No
                     detail = ticket.get("details", {})
                     if detail.get("error") == "DeviceNotRegistered":
                         logger.info(f"Dead push token detected: {token[:20]}... — marking for cleanup")
-                        # Token is no longer valid; caller should clean up via cleanup_dead_tokens()
+                        _dead_tokens.add(token)
                     else:
                         logger.warning(f"Push failed for token {token[:20]}...: {ticket.get('message')}")
                     return False
@@ -98,33 +102,40 @@ async def send_push_batch(tokens_and_messages: list[dict]) -> int:
                                 dead_tokens.append(batch[j]["to"])
             if dead_tokens:
                 logger.info(f"Batch push: {len(dead_tokens)} dead tokens detected")
+                _dead_tokens.update(dead_tokens)
             return success
     except Exception as e:
         logger.error(f"Batch push error: {e}")
         return 0
 
 
+# ── Mapping type de notification → colonne User ──────────────────────
+NOTIFICATION_TYPE_COLUMN = {
+    "breaking_news": User.notify_breaking_news,
+    "daily_digest": User.notify_daily_digest,
+    "quiz_reminders": User.notify_quiz_reminders,
+    "category_alerts": User.notify_category_alerts,
+}
+
+
 # ── Recuperation des tokens push par type de notification ──────────────
 async def get_tokens_for_notification_type(db: AsyncSession, notification_type: str) -> list[tuple[str, int]]:
     """
-    Get push tokens of users who have a specific notification preference enabled.
+    Recupere les push tokens des utilisateurs ayant active un type de notification.
     notification_type: 'breaking_news', 'daily_digest', 'quiz_reminders', 'category_alerts'
-    Returns list of (token, user_id).
-
-    NOTE: Currently returns ALL active users with push tokens. Notification preferences
-    (breaking_news, daily_digest, quiz_reminders, category_alerts) are stored only in
-    frontend AsyncStorage. The frontend filters notifications locally via the
-    preferencesStore. When preferences are synced to a backend `notification_prefs`
-    column on the User model, this function should filter by notification_type.
-    For MVP this is acceptable — all users receive all notification types.
+    Retourne une liste de (token, user_id).
+    Filtre par la colonne correspondante sur le modele User.
     """
-    # TODO: Filter by notification_type when user preferences are synced to backend.
-    # Example future implementation:
-    #   .where(User.notification_prefs[notification_type].as_boolean() == True)
     stmt = select(User.push_token, User.id).where(
         User.push_token.isnot(None),
         User.is_active == True,
     )
+
+    # Appliquer le filtre de preference si le type est connu
+    column = NOTIFICATION_TYPE_COLUMN.get(notification_type)
+    if column is not None:
+        stmt = stmt.where(column == True)
+
     result = await db.execute(stmt)
     return [(row[0], row[1]) for row in result.fetchall()]
 
@@ -135,13 +146,33 @@ async def cleanup_dead_tokens(db: AsyncSession):
 
     Called periodically by the scheduler to clean up tokens for devices
     that have uninstalled the app or revoked notification permissions.
+    Dead tokens are collected by send_push / send_push_batch at runtime.
     """
-    # Validate all stored tokens by sending a silent check
-    # For now, this is a placeholder — the real cleanup happens when
-    # send_push / send_push_batch detect DeviceNotRegistered errors.
-    # A full implementation would store dead tokens in a separate table
-    # and batch-delete them here.
-    logger.info("Dead token cleanup: no-op for now (handled inline by send_push)")
+    global _dead_tokens
+
+    if not _dead_tokens:
+        logger.info("Dead token cleanup: no dead tokens to remove")
+        return
+
+    # Snapshot and clear the set so new errors can accumulate during cleanup
+    tokens_to_remove = _dead_tokens.copy()
+    _dead_tokens = set()
+
+    result = await db.execute(
+        select(User).where(User.push_token.in_(tokens_to_remove))
+    )
+    users = result.scalars().all()
+
+    if not users:
+        logger.info("Dead token cleanup: no matching users found for %d dead tokens", len(tokens_to_remove))
+        return
+
+    for user in users:
+        user.push_token = None
+        user.push_token_updated_at = None
+
+    await db.commit()
+    logger.info("Dead token cleanup: cleared push_token for %d users", len(users))
 
 
 # ── Fonctions d'envoi par type de notification ─────────────────────────

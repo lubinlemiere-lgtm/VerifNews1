@@ -9,6 +9,7 @@ import { Animated, Platform, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useColors } from "@/hooks/useColors";
+import { useThemeStore } from "@/store/themeStore";
 
 // ── Shimmer Block ─────────────────────────────────────────────────────────
 function ShimmerBlock({ style }: { style: any }) {
@@ -42,8 +43,12 @@ const CARD_HEIGHT_REGULAR = 200;
 
 export function SkeletonCard({ isFeatured = false }: { isFeatured?: boolean }) {
   const colors = useColors();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const cardHeight = isFeatured ? CARD_HEIGHT_FEATURED : CARD_HEIGHT_REGULAR;
   const shimmerColor = colors.surfaceLight;
+  // Shimmer highlight adapts to theme
+  const shimmerHighlight = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const shimmerAccent = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
 
   return (
     <View
@@ -65,9 +70,9 @@ export function SkeletonCard({ isFeatured = false }: { isFeatured?: boolean }) {
       <View style={styles.overlay}>
         {/* Haut : badge categorie shimmer + menu dot shimmer */}
         <View style={styles.topRow}>
-          <ShimmerBlock style={[styles.categoryBadge, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
+          <ShimmerBlock style={[styles.categoryBadge, { backgroundColor: shimmerHighlight }]} />
           <View style={{ flex: 1 }} />
-          <ShimmerBlock style={[styles.menuDot, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
+          <ShimmerBlock style={[styles.menuDot, { backgroundColor: shimmerHighlight }]} />
         </View>
 
         {/* Spacer */}
@@ -75,25 +80,25 @@ export function SkeletonCard({ isFeatured = false }: { isFeatured?: boolean }) {
 
         {/* Bas : gradient + lignes de titre + meta */}
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.7)"]}
+          colors={["transparent", isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.15)"]}
           style={styles.gradient}
         >
           <ShimmerBlock
-            style={[styles.titleLine, { backgroundColor: "rgba(255,255,255,0.12)" }]}
+            style={[styles.titleLine, { backgroundColor: shimmerAccent }]}
           />
           <ShimmerBlock
             style={[
               styles.titleLineShort,
-              { backgroundColor: "rgba(255,255,255,0.12)" },
+              { backgroundColor: shimmerAccent },
               isFeatured && styles.titleLineShortFeatured,
             ]}
           />
           <View style={styles.metaRow}>
-            <ShimmerBlock style={[styles.metaItem, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
-            <ShimmerBlock style={[styles.metaDot, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
-            <ShimmerBlock style={[styles.metaItemSmall, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
-            <ShimmerBlock style={[styles.metaDot, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
-            <ShimmerBlock style={[styles.metaItemSmall, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
+            <ShimmerBlock style={[styles.metaItem, { backgroundColor: shimmerHighlight }]} />
+            <ShimmerBlock style={[styles.metaDot, { backgroundColor: shimmerHighlight }]} />
+            <ShimmerBlock style={[styles.metaItemSmall, { backgroundColor: shimmerHighlight }]} />
+            <ShimmerBlock style={[styles.metaDot, { backgroundColor: shimmerHighlight }]} />
+            <ShimmerBlock style={[styles.metaItemSmall, { backgroundColor: shimmerHighlight }]} />
           </View>
         </LinearGradient>
       </View>

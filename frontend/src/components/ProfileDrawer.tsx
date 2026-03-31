@@ -36,6 +36,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { Button } from "@/components/ui/Button";
 import { LevelProgress } from "@/components/LevelProgress";
 import { SUPPORT_EMAIL, APP_VERSION, PLAY_STORE_URL, APP_SHARE_MESSAGE_FR, APP_SHARE_MESSAGE_EN } from "@/constants/config";
+import { withOpacity } from "@/utils/colors";
 
 // ── Language options ──────────────────────────────────────────────────────
 const LANG_OPTIONS = [
@@ -108,11 +109,15 @@ export function ProfileDrawer() {
   // Compute drawer width dynamically based on actual screen size
   const drawerWidth = Math.min(screenWidth * 0.82, 360);
 
-  const { isOpen, close } = useDrawerStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const isOpen = useDrawerStore((s) => s.isOpen);
+  const close = useDrawerStore((s) => s.close);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
-  const { mode, toggleTheme } = useThemeStore();
-  const { choice, setLanguage } = useLanguageStore();
+  const mode = useThemeStore((s) => s.mode);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const choice = useLanguageStore((s) => s.choice);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
   const bookmarks = useBookmarkStore((s) => s.bookmarks);
   const reactions = useReactionStore((s) => s.reactions);
 
@@ -230,7 +235,7 @@ export function ProfileDrawer() {
                 key={opt.value}
                 style={[
                   styles.langOption,
-                  isSelected && { backgroundColor: colors.primary + "15" },
+                  isSelected && { backgroundColor: withOpacity(colors.primary, 0.08) },
                 ]}
                 onPress={() => {
                   setLanguage(opt.value);

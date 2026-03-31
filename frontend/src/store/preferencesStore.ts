@@ -16,6 +16,7 @@ import type { Category, PreferenceItem } from "@/types/category";
 const COUNTRY_KEY = "selected_country";
 const DEFAULT_CATEGORY_KEY = "default_category";
 const TTS_SPEED_KEY = "tts_speed";
+const TTS_ENABLED_KEY = "tts_enabled";
 
 // # Fallback categories — utilisees si le backend est indisponible
 const DEFAULT_CATEGORIES: Category[] = [
@@ -34,15 +35,18 @@ interface PreferencesState {
   selectedCountry: string;
   defaultCategory: string;
   ttsSpeed: number;
+  ttsEnabled: boolean;
   loadCategories: () => Promise<void>;
   loadPreferences: () => Promise<void>;
   loadCountry: () => Promise<void>;
   loadDefaultCategory: () => Promise<void>;
   loadTtsSpeed: () => Promise<void>;
+  loadTtsEnabled: () => Promise<void>;
   updateSubscriptions: (categoryIds: number[]) => Promise<void>;
   setCountry: (code: string) => Promise<void>;
   setDefaultCategory: (slug: string) => Promise<void>;
   setTtsSpeed: (speed: number) => Promise<void>;
+  setTtsEnabled: (enabled: boolean) => Promise<void>;
 }
 
 // ── Store Zustand ───────────────────────────────────────────────────
@@ -52,6 +56,7 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
   selectedCountry: "FR",
   defaultCategory: "all",
   ttsSpeed: 1,
+  ttsEnabled: false,
 
   // ── Chargement des donnees depuis API / AsyncStorage ────────────
   loadCategories: async () => {
@@ -98,6 +103,15 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     } catch {}
   },
 
+  loadTtsEnabled: async () => {
+    try {
+      const stored = await AsyncStorage.getItem(TTS_ENABLED_KEY);
+      if (stored !== null) {
+        set({ ttsEnabled: stored === "true" });
+      }
+    } catch {}
+  },
+
   // ── Actions de mise a jour ─────────────────────────────────────
   updateSubscriptions: async (categoryIds) => {
     try {
@@ -123,5 +137,10 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
   setTtsSpeed: async (speed) => {
     set({ ttsSpeed: speed });
     await AsyncStorage.setItem(TTS_SPEED_KEY, String(speed));
+  },
+
+  setTtsEnabled: async (enabled) => {
+    set({ ttsEnabled: enabled });
+    await AsyncStorage.setItem(TTS_ENABLED_KEY, String(enabled));
   },
 }));

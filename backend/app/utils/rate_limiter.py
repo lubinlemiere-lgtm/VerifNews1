@@ -34,3 +34,6 @@ class RateLimiter:
 
 # Auth rate limiter: 5 login attempts per minute per IP
 auth_limiter = RateLimiter(max_requests=5, window_seconds=60)
+
+# TTS rate limiter: 10 audio generations per minute per IP
+tts_limiter = RateLimiter(max_requests=10, window_seconds=60)

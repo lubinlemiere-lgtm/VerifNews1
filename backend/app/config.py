@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # ── TTS et embeddings ─────────────────────────────────────────────
     TTS_CACHE_DIR: str = "./audio_cache"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    USE_TFIDF_ONLY: bool = True  # True par defaut pour Render 512MB (sentence-transformers ~400MB)
 
     # ── Seuils NLP (verification croisee et deduplication) ─────────────
     VERIFICATION_THRESHOLD: float = 0.75

@@ -1,10 +1,12 @@
 // ###########################################################################
-// # Couleurs — Palette principale (dark mode par defaut)
-// # Colors: couleurs globales. CategoryColors: couleur par categorie
-// # LightColors: palette mode clair (utilisee si theme = light)
+// # Couleurs — Palettes dark et light
+// # DarkColors: palette sombre (glass morphism, fond noir)
+// # LightColors: palette claire (fond blanc/gris clair, clean & modern)
+// # Colors: alias vers DarkColors (retrocompatibilite)
+// # CategoryColors: couleurs par categorie (identiques en dark et light)
 // ###########################################################################
 
-export const Colors = {
+export const DarkColors = {
   primary: "#D0D4DC",       // Argent metallise clair
   secondary: "#8E95A4",     // Gris moyen metallise
   accent: "#E8ECF4",        // Blanc argente
@@ -25,6 +27,31 @@ export const Colors = {
 
   border: "#1F1F2C",
 };
+
+export const LightColors = {
+  primary: "#3C4050",       // Charbon metallise
+  secondary: "#6B7280",     // Gris acier
+  accent: "#4B5264",        // Gris fonce
+  success: "#059669",       // Vert ajuste pour fond clair
+  warning: "#D97706",       // Ambre ajuste pour fond clair
+  danger: "#DC2626",        // Rouge ajuste pour fond clair
+  verified: "#059669",
+  verifiedStrong: "#0369A1",
+
+  background: "#F8F9FA",    // Gris tres clair (Apple-style)
+  surface: "#FFFFFF",       // Blanc pur
+  surfaceLight: "#F1F2F6",  // Gris pale pour sous-elements
+  card: "#FFFFFF",          // Cartes blanches
+
+  text: "#1A1A2E",          // Noir profond pour lisibilite
+  textSecondary: "#6B7280", // Gris moyen
+  textMuted: "#9CA3AF",     // Gris clair
+
+  border: "#E5E7EB",        // Bordure gris clair subtile
+};
+
+// Alias retrocompatible — les imports de `Colors` continuent de fonctionner
+export const Colors = DarkColors;
 
 export const CategoryColors: Record<string, string> = {
   astronomy: "#7B2FBE",

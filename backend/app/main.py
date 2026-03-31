@@ -17,8 +17,6 @@ from sqlalchemy import text as sa_text
 from app.api.v1.router import api_router
 from app.config import settings
 from app.database import async_session
-from app.pipeline.scheduler import start_scheduler, stop_scheduler
-from app.utils.vector_ops import COSINE_SIMILARITY_FUNC
 from app.utils.rate_limiter import RateLimiter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -37,7 +35,9 @@ async def lifespan(app: FastAPI):
         logger.critical("JWT_SECRET is insecure! Set a strong secret (32+ chars) in .env")
         raise SystemExit("FATAL: JWT_SECRET not configured. Set it in .env before starting.")
 
+    # Lazy import heavy modules to reduce startup memory footprint
     try:
+        from app.utils.vector_ops import COSINE_SIMILARITY_FUNC
         async with async_session() as session:
             await session.execute(sa_text(COSINE_SIMILARITY_FUNC))
             await session.commit()
@@ -45,11 +45,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Could not create cosine_similarity function: {e}")
     try:
+        from app.pipeline.scheduler import start_scheduler
         start_scheduler()
     except Exception as e:
         logger.warning(f"Scheduler failed to start: {e}")
     yield
     try:
+        from app.pipeline.scheduler import stop_scheduler
         stop_scheduler()
     except Exception:
         pass
@@ -80,7 +82,7 @@ app.add_middleware(
         "http://127.0.0.1:8081",
         "http://10.0.2.2:8081",
         "https://verifnews.app",
-        "https://*.onrender.com",
+        "https://verifnews-api.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
@@ -125,7 +127,14 @@ async def security_middleware(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Cache-Control"] = "no-store"
+    # Allow client-side caching for public GET endpoints (feed, categories)
+    path = request.url.path
+    if request.method == "GET" and any(
+        path.startswith(p) for p in ("/api/v1/feed/", "/api/v1/categories")
+    ):
+        response.headers["Cache-Control"] = "public, max-age=60"
+    else:
+        response.headers["Cache-Control"] = "no-store"
 
     if duration_ms > 1000:
         logger.warning(f"Slow request: {request.method} {request.url.path} took {duration_ms}ms")

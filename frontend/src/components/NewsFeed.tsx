@@ -4,10 +4,10 @@
 // ###########################################################################
 
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useMemo } from "react";
+import { FlashList } from "@shopify/flash-list";
+import React, { useCallback } from "react";
 import {
   Animated,
-  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
@@ -33,10 +33,6 @@ interface NewsFeedProps {
   onScroll?: any;
 }
 
-type FeedItem =
-  | { type: "article"; data: ArticleListItem; isFirst: boolean }
-  | { type: "ad" };
-
 export function NewsFeed({
   articles,
   isLoading,
@@ -49,28 +45,13 @@ export function NewsFeed({
 }: NewsFeedProps) {
   const { t } = useTranslation();
   const colors = useColors();
-  // Insert ads every 8 articles, never in the first 3 — memoized
-  const feedItems = useMemo<FeedItem[]>(() => {
-    const items: FeedItem[] = [];
-    articles.forEach((article, index) => {
-      items.push({ type: "article", data: article, isFirst: index === 0 });
-      if (index >= 3 && (index + 1) % 8 === 0) {
-        items.push({ type: "ad" });
-      }
-    });
-    return items;
-  }, [articles]);
 
-  const renderItem = useCallback(({ item }: { item: FeedItem }) => {
-    if (item.type === "ad") {
-      return <AdBanner />;
-    }
-    return <NewsCard article={item.data} isFeatured={item.isFirst} />;
+  const renderItem = useCallback(({ item, index }: { item: ArticleListItem; index: number }) => {
+    return <NewsCard article={item} isFeatured={index === 0} />;
   }, []);
 
-  const keyExtractor = useCallback((item: FeedItem, index: number) => {
-    if (item.type === "ad") return `ad-${index}`;
-    return item.data.id;
+  const keyExtractor = useCallback((item: ArticleListItem) => {
+    return item.id;
   }, []);
 
   if (isLoading && articles.length === 0) {
@@ -83,8 +64,8 @@ export function NewsFeed({
   }
 
   return (
-    <FlatList
-      data={feedItems}
+    <FlashList
+      data={articles}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       contentContainerStyle={styles.list}
@@ -107,10 +88,14 @@ export function NewsFeed({
             <LoadingSpinner />
           </View>
         ) : articles.length > 0 ? (
-          <View style={styles.endOfFeed}>
-            <View style={[styles.endLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.endText, { color: colors.textMuted }]}>{t("feed.caughtUp")}</Text>
-            <View style={[styles.endLine, { backgroundColor: colors.border }]} />
+          <View>
+            {/* 1 seule pub tout en bas, visible si on scroll jusque la */}
+            <AdBanner />
+            <View style={styles.endOfFeed}>
+              <View style={[styles.endLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.endText, { color: colors.textMuted }]}>{t("feed.caughtUp")}</Text>
+              <View style={[styles.endLine, { backgroundColor: colors.border }]} />
+            </View>
           </View>
         ) : null
       }
@@ -133,6 +118,7 @@ export function NewsFeed({
   );
 }
 
+// NewsFeed — FlashList with infinite scroll and pull-to-refresh
 const styles = StyleSheet.create({
   list: {
     paddingBottom: 90,

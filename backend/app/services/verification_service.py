@@ -65,7 +65,7 @@ async def cross_verify_article(article: Article, db: AsyncSession) -> bool:
             if source_id not in distinct_sources:
                 distinct_sources[source_id] = match
 
-        if len(distinct_sources) >= settings.MIN_VERIFICATION_SOURCES - 1:
+        if len(distinct_sources) >= settings.MIN_VERIFICATION_SOURCES:
             # Check for existing verifications to avoid duplicates
             existing = await db.execute(
                 select(Verification.source_id).where(Verification.article_id == article.id)

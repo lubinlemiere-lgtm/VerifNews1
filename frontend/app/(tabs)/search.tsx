@@ -6,13 +6,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  FlatList,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 
 import { useColors } from "@/hooks/useColors";
 import { useSearch } from "@/hooks/useSearch";
@@ -67,10 +67,11 @@ export default function SearchScreen() {
       {isLoading ? (
         <LoadingSpinner />
       ) : (
-        <FlatList
+        <FlashList
           data={results}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <NewsCard article={item} />}
+
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             hasSearched && results.length > 0 ? (

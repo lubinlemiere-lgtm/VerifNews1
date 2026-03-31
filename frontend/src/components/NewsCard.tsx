@@ -9,7 +9,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  ImageBackground,
   Modal,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 
 import { CategoryColors } from "@/constants/colors";
@@ -31,6 +31,8 @@ import { useBookmarkStore } from "@/store/bookmarkStore";
 import { lightHaptic } from "@/utils/haptics";
 import { shareArticle } from "@/utils/sharing";
 import { useTextSizeStore } from "@/store/textSizeStore";
+import { useThemeStore } from "@/store/themeStore";
+import { withOpacity } from "@/utils/colors";
 
 // ── Dimensions ──────────────────────────────────────────────────────────
 const CARD_HEIGHT_FEATURED = 300;
@@ -71,12 +73,15 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const colors = useColors();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const timeAgo = useTimeAgo();
   const [menuVisible, setMenuVisible] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
-  const { getReaction, setReaction } = useReactionStore();
+  const getReaction = useReactionStore((s) => s.getReaction);
+  const setReaction = useReactionStore((s) => s.setReaction);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { isBookmarked, toggleBookmark } = useBookmarkStore();
+  const isBookmarked = useBookmarkStore((s) => s.isBookmarked);
+  const toggleBookmark = useBookmarkStore((s) => s.toggleBookmark);
   const reaction = getReaction(article.id);
   const saved = isBookmarked(article.id);
   const getScaled = useTextSizeStore((s) => s.getScaled);
@@ -122,7 +127,7 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
 
       {/* Degrade + infos du bas */}
       <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.85)"]}
+        colors={["transparent", isDark ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.55)"]}
         style={styles.gradient}
       >
         <Text
@@ -177,24 +182,36 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
       <Pressable
         style={({ pressed }) => [
           styles.card,
-          { height: cardHeight, borderColor: catColor + "50" },
+          {
+            height: cardHeight,
+            borderColor: isDark ? withOpacity(catColor, 0.31) : colors.border,
+            borderWidth: isDark ? 1.5 : 1,
+          },
+          !isDark && {
+            shadowOpacity: 0.12,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          },
           pressed && styles.cardPressed,
         ]}
         onPress={() => router.push(`/article/${article.id}`)}
       >
-        {/* Glass glow — subtle halo behind the card */}
-        <View style={[styles.glassGlow, { shadowColor: catColor }]} />
+        {/* Glass glow — subtle halo behind the card (dark mode only) */}
+        {isDark && <View style={[styles.glassGlow, { shadowColor: catColor }]} />}
 
         {article.image_url ? (
-          // Carte avec image
-          <ImageBackground
-            source={{ uri: article.image_url }}
-            style={styles.imageBg}
-            imageStyle={styles.imageStyle}
-            resizeMode="cover"
-          >
+          // Carte avec image (expo-image pour cache + transition)
+          <View style={styles.imageBg}>
+            <ExpoImage
+              source={{ uri: article.image_url }}
+              style={[StyleSheet.absoluteFillObject, styles.imageStyle]}
+              contentFit="cover"
+              transition={300}
+              recyclingKey={article.id}
+            />
             {overlayContent}
-          </ImageBackground>
+          </View>
         ) : (
           // Fallback sans image — fond couleur categorie
           <View style={[styles.noImageBg, { backgroundColor: catColor }]}>
@@ -210,8 +227,8 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
           </View>
         )}
 
-        {/* Glass reflection — fine light edge at top */}
-        <View style={styles.glassReflection} />
+        {/* Glass reflection — fine light edge at top (dark mode only) */}
+        {isDark && <View style={styles.glassReflection} />}
       </Pressable>
 
       {/* ── AuthGate — Modal connexion requise ──────────────────────── */}
@@ -238,7 +255,7 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
             {/* Boutons Like / Dislike */}
             <View style={styles.reactionRow}>
               <Pressable
-                style={[styles.reactionBtn, reaction === "like" && { backgroundColor: colors.primary + "20" }]}
+                style={[styles.reactionBtn, reaction === "like" && { backgroundColor: withOpacity(colors.primary, 0.13) }]}
                 onPress={() => {
                   if (!isAuthenticated) {
                     setMenuVisible(false);
@@ -258,7 +275,7 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
               </Pressable>
 
               <Pressable
-                style={[styles.reactionBtn, reaction === "dislike" && { backgroundColor: colors.danger + "20" }]}
+                style={[styles.reactionBtn, reaction === "dislike" && { backgroundColor: withOpacity(colors.danger, 0.13) }]}
                 onPress={() => {
                   if (!isAuthenticated) {
                     setMenuVisible(false);
@@ -278,7 +295,7 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
               </Pressable>
 
               <Pressable
-                style={[styles.reactionBtn, saved && { backgroundColor: colors.warning + "20" }]}
+                style={[styles.reactionBtn, saved && { backgroundColor: withOpacity(colors.warning, 0.13) }]}
                 onPress={() => {
                   if (!isAuthenticated) {
                     setMenuVisible(false);
@@ -339,7 +356,7 @@ function NewsCardInner({ article, isFeatured = false }: NewsCardProps) {
                 shareArticle({
                   articleId: article.id,
                   title: article.title,
-                  summary: article.summary,
+                  summary: article.summary ?? undefined,
                   sharedViaText: t("article.sharedVia"),
                 });
               }}

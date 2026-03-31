@@ -5,7 +5,8 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 
 import { useColors } from "@/hooks/useColors";
 import { useBookmarkStore } from "@/store/bookmarkStore";
@@ -16,7 +17,8 @@ import { TabBarOverlay } from "@/components/TabBarOverlay";
 export default function BookmarksScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const { bookmarks, loadBookmarks } = useBookmarkStore();
+  const bookmarks = useBookmarkStore((s) => s.bookmarks);
+  const loadBookmarks = useBookmarkStore((s) => s.loadBookmarks);
 
   useEffect(() => {
     loadBookmarks();
@@ -24,10 +26,11 @@ export default function BookmarksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <FlatList
+      <FlashList
         data={bookmarks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <NewsCard article={item} />}
+
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>

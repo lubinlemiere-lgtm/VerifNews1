@@ -236,8 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     fontSize: 16,
-    // @ts-ignore — supprime l'outline orange sur web
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
   link: {
     marginTop: 28,

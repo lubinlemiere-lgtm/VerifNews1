@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 
 from app.models.article import Article
 from app.models.category import Category
+from app.models.reaction import Reaction
 from app.models.user_preference import UserPreference
 from app.schemas.article import ArticleListItem, PaginatedArticles
 
@@ -34,7 +35,9 @@ def _build_ranking_order():
 
 
 def _build_top_ranking():
-    """Ranking for top news: verification_count is king."""
+    """Ranking for top news: likes > verification_count > recency."""
+    # like_count is added via a subquery label — see get_top_articles()
+    # Here we build the secondary/tertiary tiebreakers only.
     verification_score = func.coalesce(Article.verification_count, 0) * 20.0
     image_bonus = case(
         (Article.image_url.isnot(None), 3.0),
@@ -85,7 +88,7 @@ async def get_personalized_feed(
     if verified_only:
         query = query.where(Article.is_verified.is_(True))
 
-    query = query.where(Article.published_at > text("NOW() - INTERVAL '48 hours'"))
+    query = query.where(Article.published_at > text("NOW() - INTERVAL '7 days'"))
 
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
@@ -130,7 +133,7 @@ async def get_latest_feed(
     if category_slug:
         query = query.where(Category.slug == category_slug)
 
-    query = query.where(Article.published_at > text("NOW() - INTERVAL '48 hours'"))
+    query = query.where(Article.published_at > text("NOW() - INTERVAL '7 days'"))
 
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
@@ -168,33 +171,63 @@ async def get_top_articles(
     page: int = 1,
     page_size: int = 15,
 ) -> PaginatedArticles:
-    """Most important verified articles of the month or year.
-    Ranked by verification_count (most cross-verified = most important).
+    """Top verified articles ranked by engagement.
+    Ranking: like_count (DESC) > verification_count (DESC) > published_at (DESC).
+    Periods: day (24h), week (7d), month (30d), year (365d).
     """
-    query = select(Article).join(Category)
+    # Subquery: count likes per article
+    like_count_sq = (
+        select(
+            Reaction.article_id,
+            func.count(Reaction.id).label("like_count"),
+        )
+        .where(Reaction.reaction_type == "like")
+        .group_by(Reaction.article_id)
+        .subquery()
+    )
+
+    query = (
+        select(Article, func.coalesce(like_count_sq.c.like_count, 0).label("like_count"))
+        .join(Category)
+        .outerjoin(like_count_sq, Article.id == like_count_sq.c.article_id)
+    )
     query = query.where(Article.is_verified.is_(True))
 
-    if period == "month":
-        query = query.where(Article.published_at > text("NOW() - INTERVAL '30 days'"))
-    elif period == "year":
-        query = query.where(Article.published_at > text("NOW() - INTERVAL '365 days'"))
-    else:
-        query = query.where(Article.published_at > text("NOW() - INTERVAL '7 days'"))
+    # Period filter
+    period_intervals = {
+        "day": "1 day",
+        "week": "7 days",
+        "month": "30 days",
+        "year": "365 days",
+    }
+    interval = period_intervals.get(period, "30 days")
+    query = query.where(Article.published_at > text(f"NOW() - INTERVAL '{interval}'"))
 
     if category_slug:
         query = query.where(Category.slug == category_slug)
 
-    count_q = select(func.count()).select_from(query.subquery())
+    # Count total (without like join for efficiency)
+    count_base = select(Article).join(Category).where(Article.is_verified.is_(True))
+    count_base = count_base.where(Article.published_at > text(f"NOW() - INTERVAL '{interval}'"))
+    if category_slug:
+        count_base = count_base.where(Category.slug == category_slug)
+    count_q = select(func.count()).select_from(count_base.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
+    # Order: likes DESC > verification_count DESC > recency DESC
     query = (
         query.options(joinedload(Article.category))
-        .order_by(_build_top_ranking(), Article.published_at.desc())
+        .order_by(
+            func.coalesce(like_count_sq.c.like_count, 0).desc(),
+            func.coalesce(Article.verification_count, 0).desc(),
+            Article.published_at.desc(),
+        )
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
     result = await db.execute(query)
-    articles = result.scalars().unique().all()
+    rows = result.unique().all()
+    articles = [row[0] for row in rows]
 
     return PaginatedArticles(
         items=[_article_to_item(a) for a in articles],

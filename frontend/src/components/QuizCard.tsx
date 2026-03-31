@@ -13,6 +13,7 @@ import { CategoryColors } from "@/constants/colors";
 import { CATEGORY_ICONS } from "@/constants/categories";
 import { useColors } from "@/hooks/useColors";
 import { useTranslation } from "@/hooks/useTranslation";
+import { withOpacity } from "@/utils/colors";
 import type { QuizSummary } from "@/types/quiz";
 
 interface QuizCardProps {
@@ -57,7 +58,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
     >
       {/* Top accent bar */}
       <LinearGradient
-        colors={[accentColor, accentColor + "80"]}
+        colors={[accentColor, withOpacity(accentColor, 0.5)]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.accentBar}
@@ -66,13 +67,13 @@ export function QuizCard({ quiz }: QuizCardProps) {
       <View style={styles.content}>
         {/* Header row */}
         <View style={styles.headerRow}>
-          <View style={[styles.iconBox, { backgroundColor: accentColor + "18" }]}>
+          <View style={[styles.iconBox, { backgroundColor: withOpacity(accentColor, 0.09) }]}>
             <Ionicons name={icon as any} size={22} color={accentColor} />
           </View>
           <View style={styles.info}>
             <View style={styles.typeRow}>
               {isMonthly ? (
-                <View style={[styles.typeBadge, { backgroundColor: "#9B59B6" + "20" }]}>
+                <View style={[styles.typeBadge, { backgroundColor: withOpacity("#9B59B6", 0.13) }]}>
                   <Ionicons name="star" size={10} color="#9B59B6" />
                   <Text style={[styles.typeText, { color: "#9B59B6" }]}>
                     {t("quiz.cultureG")}
@@ -99,7 +100,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
 
           {/* Play / Played badge */}
           {quiz.already_played ? (
-            <View style={[styles.playedBadge, { backgroundColor: colors.success + "18" }]}>
+            <View style={[styles.playedBadge, { backgroundColor: withOpacity(colors.success, 0.09) }]}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             </View>
           ) : (

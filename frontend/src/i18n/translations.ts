@@ -11,6 +11,7 @@ export const translations: Record<Language, Record<string, string>> = {
   en: {
     // Home screen
     "home.recent": "Recent",
+    "home.trending": "Trending",
     "home.topMonth": "Top Month",
     "home.topYear": "Top Year",
     "home.articles": "Articles",
@@ -18,8 +19,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "home.categories": "Categories",
     "home.all": "All",
     "home.latestNews": "Latest news",
-    "home.topOfMonth": "Top of the month",
-    "home.topOfYear": "Top of the year",
+    "home.trendingToday": "Most popular this year",
+    "home.topOfMonth": "Top 10 of the month",
+    "home.topOfYear": "Top 10 of the year",
     "home.weeklyQuiz": "Weekly quiz",
     "home.countryPicker": "Country",
 
@@ -133,6 +135,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "register.passwordHint": "Min. 8 characters, with letters and numbers",
     "register.failed": "Registration failed",
     "register.generic": "Something went wrong",
+    "register.acceptPrefix": "I accept the",
+    "register.termsLink": "Terms of Service",
+    "register.and": "and the",
+    "register.privacyLink": "Privacy Policy",
+    "register.acceptTerms": "You must accept the Terms of Service and Privacy Policy",
 
     // Forgot password
     "forgot.title": "Forgot your password?",
@@ -144,6 +151,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "forgot.sentDesc": "We've sent a password reset link to:",
     "forgot.backToLogin": "Back to login",
     "forgot.resend": "Didn't receive it? Try again",
+
+    // Reset password
+    "reset.title": "Reset your password",
+    "reset.subtitle": "Enter your new password below.",
+    "reset.newPassword": "New password",
+    "reset.newPasswordPlaceholder": "Your new password",
+    "reset.confirmPassword": "Confirm password",
+    "reset.confirmPasswordPlaceholder": "Confirm your new password",
+    "reset.submit": "Reset password",
+    "reset.fillFields": "Please fill in both password fields",
+    "reset.mismatch": "Passwords don't match",
+    "reset.invalidToken": "This reset link is invalid",
+    "reset.tokenExpired": "This reset link has expired. Please request a new one.",
+    "reset.failed": "Could not reset password. Try again.",
+    "reset.successTitle": "Password reset!",
+    "reset.successDesc": "Your password has been changed successfully. You can now sign in with your new password.",
+    "reset.goToLogin": "Sign in",
 
     // Article detail
     "article.header": "Article",
@@ -191,6 +215,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quiz.statsBest": "Best",
     "quiz.monday": "Monday",
     "quiz.thursday": "Thursday",
+    "quiz.noQuestions": "No questions available",
 
     // Tabs
     "tabs.quiz": "Quiz",
@@ -280,12 +305,17 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Network
     "network.offline": "No internet connection",
+    "network.offlineMode": "Offline mode",
     "network.retrying": "Reconnecting…",
+    "network.cachedData": "Last update: {time}",
 
     // Error boundary
     "error.title": "Oops!",
     "error.message": "Something went wrong",
-    "error.retry": "Try again",
+    "error.retry": "Retry",
+    "error.networkError": "Connection error",
+    "error.tryAgain": "Tap to retry",
+    "error.useOffline": "Use offline mode",
 
     // CountrySelector
     "country.selectTitle": "Select country",
@@ -368,6 +398,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.allCategories": "All",
     "settings.myFavorites": "My favorites",
     "settings.audio": "Audio",
+    "settings.ttsEnabled": "Text-to-Speech",
     "settings.ttsSpeed": "Reading speed",
     "settings.ttsSpeedSlow": "Slow",
     "settings.ttsSpeedNormal": "Normal",
@@ -421,6 +452,7 @@ export const translations: Record<Language, Record<string, string>> = {
   fr: {
     // Home screen
     "home.recent": "Recent",
+    "home.trending": "Tendances",
     "home.topMonth": "Top Mois",
     "home.topYear": "Top Annee",
     "home.articles": "Articles",
@@ -428,8 +460,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "home.categories": "Categories",
     "home.all": "Tout",
     "home.latestNews": "Dernieres news",
-    "home.topOfMonth": "Top du mois",
-    "home.topOfYear": "Top de l'annee",
+    "home.trendingToday": "Les plus populaires",
+    "home.topOfMonth": "Top 10 du mois",
+    "home.topOfYear": "Top 10 de l'annee",
     "home.weeklyQuiz": "Quiz de la semaine",
     "home.countryPicker": "Pays",
 
@@ -543,6 +576,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "register.passwordHint": "Min. 8 caracteres, avec lettres et chiffres",
     "register.failed": "Inscription echouee",
     "register.generic": "Une erreur est survenue",
+    "register.acceptPrefix": "J'accepte les",
+    "register.termsLink": "Conditions d'utilisation",
+    "register.and": "et la",
+    "register.privacyLink": "Politique de confidentialite",
+    "register.acceptTerms": "Tu dois accepter les Conditions d'utilisation et la Politique de confidentialite",
 
     // Forgot password
     "forgot.title": "Mot de passe oublie ?",
@@ -554,6 +592,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "forgot.sentDesc": "On a envoye un lien de reinitialisation a :",
     "forgot.backToLogin": "Retour a la connexion",
     "forgot.resend": "Pas recu ? Reessayer",
+
+    // Reset password
+    "reset.title": "Reinitialiser ton mot de passe",
+    "reset.subtitle": "Entre ton nouveau mot de passe ci-dessous.",
+    "reset.newPassword": "Nouveau mot de passe",
+    "reset.newPasswordPlaceholder": "Ton nouveau mot de passe",
+    "reset.confirmPassword": "Confirmer le mot de passe",
+    "reset.confirmPasswordPlaceholder": "Confirme ton nouveau mot de passe",
+    "reset.submit": "Reinitialiser",
+    "reset.fillFields": "Remplis les deux champs de mot de passe",
+    "reset.mismatch": "Les mots de passe ne correspondent pas",
+    "reset.invalidToken": "Ce lien de reinitialisation est invalide",
+    "reset.tokenExpired": "Ce lien a expire. Demande un nouveau lien.",
+    "reset.failed": "Impossible de reinitialiser le mot de passe. Reessaie.",
+    "reset.successTitle": "Mot de passe reinitialise !",
+    "reset.successDesc": "Ton mot de passe a ete change avec succes. Tu peux maintenant te connecter avec ton nouveau mot de passe.",
+    "reset.goToLogin": "Se connecter",
 
     // Article detail
     "article.header": "Article",
@@ -601,6 +656,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quiz.statsBest": "Record",
     "quiz.monday": "Lundi",
     "quiz.thursday": "Jeudi",
+    "quiz.noQuestions": "Aucune question disponible",
 
     // Tabs
     "tabs.quiz": "Quiz",
@@ -690,12 +746,17 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Network
     "network.offline": "Pas de connexion internet",
+    "network.offlineMode": "Mode hors-ligne",
     "network.retrying": "Reconnexion en cours…",
+    "network.cachedData": "Derniere mise a jour : {time}",
 
     // Error boundary
     "error.title": "Oups !",
     "error.message": "Une erreur est survenue",
     "error.retry": "Reessayer",
+    "error.networkError": "Erreur de connexion",
+    "error.tryAgain": "Appuyez pour reessayer",
+    "error.useOffline": "Utiliser le mode hors-ligne",
 
     // CountrySelector
     "country.selectTitle": "Choisir un pays",
@@ -778,6 +839,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.allCategories": "Toutes",
     "settings.myFavorites": "Mes favoris",
     "settings.audio": "Audio",
+    "settings.ttsEnabled": "Text-to-Speech",
     "settings.ttsSpeed": "Vitesse de lecture",
     "settings.ttsSpeedSlow": "Lent",
     "settings.ttsSpeedNormal": "Normal",

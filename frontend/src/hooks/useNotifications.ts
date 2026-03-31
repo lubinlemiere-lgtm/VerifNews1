@@ -32,14 +32,14 @@ export function useNotifications() {
         if (isAuth) {
           api.post("/auth/push-token", { token }).catch(() => {});
         }
-        console.log("Push token registered:", token);
+        if (__DEV__) console.log("Push token registered:", token);
       }
     });
 
     // 2. Listener: notification reçue en foreground
     notifReceivedSub.current = addNotificationReceivedListener(
       (notification) => {
-        console.log("Notification received:", notification.request.content);
+        if (__DEV__) console.log("Notification received:", notification.request.content);
       },
     );
 

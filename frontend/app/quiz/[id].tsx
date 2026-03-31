@@ -3,7 +3,7 @@
 // # Timer total, navigation, fun_fact pour easy, resultat avec leaderboard
 // ###########################################################################
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -17,6 +17,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { CategoryColors } from "@/constants/colors";
 import { CATEGORY_ICONS } from "@/constants/categories";
@@ -29,8 +30,17 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthGateModal } from "@/components/ui/AuthGateModal";
 import { useAuthStore } from "@/store/authStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { withOpacity } from "@/utils/colors";
 
 // ── Constantes et utilitaires ────────────────────────────────────────
+const QUESTION_TIME_LIMIT = 20; // seconds per question
+
+function getTimerColor(seconds: number, colors: { success: string; warning: string; danger: string }): string {
+  if (seconds > 10) return colors.success;
+  if (seconds > 5) return colors.warning;
+  return colors.danger;
+}
+
 const DIFFICULTY_KEYS: Record<string, { key: string; colorKey: "success" | "warning" | "danger" }> = {
   easy: { key: "quiz.easy", colorKey: "success" },
   medium: { key: "quiz.medium", colorKey: "warning" },
@@ -62,17 +72,82 @@ export default function QuizScreen() {
   const [showAuthGate, setShowAuthGate] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // ── Timer ───────────────────────────────────────────────────────
+  // ── Global elapsed timer ──────────────────────────────────────
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+
+  // ── Per-question countdown timer (20s) ───────────────────────
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(QUESTION_TIME_LIMIT);
+  const questionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerBarAnim = useRef(new Animated.Value(1)).current;
+  const isAutoAdvancing = useRef(false);
+
+  const stopQuestionTimer = useCallback(() => {
+    if (questionTimerRef.current) {
+      clearInterval(questionTimerRef.current);
+      questionTimerRef.current = null;
+    }
+    timerBarAnim.stopAnimation();
+  }, [timerBarAnim]);
+
+  const startQuestionTimer = useCallback(() => {
+    stopQuestionTimer();
+    setQuestionTimeLeft(QUESTION_TIME_LIMIT);
+    timerBarAnim.setValue(1);
+    Animated.timing(timerBarAnim, {
+      toValue: 0,
+      duration: QUESTION_TIME_LIMIT * 1000,
+      useNativeDriver: false,
+    }).start();
+
+    const start = Date.now();
+    questionTimerRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - start) / 1000);
+      const remaining = QUESTION_TIME_LIMIT - elapsed;
+      if (remaining <= 0) {
+        setQuestionTimeLeft(0);
+        stopQuestionTimer();
+        isAutoAdvancing.current = true;
+        // Haptic feedback on timeout
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      } else {
+        setQuestionTimeLeft(remaining);
+      }
+    }, 1000);
+  }, [stopQuestionTimer, timerBarAnim]);
 
   useEffect(() => {
     loadQuiz();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      stopQuestionTimer();
     };
   }, [id]);
+
+  // ── Start question timer when currentQ changes (and quiz is active) ──
+  useEffect(() => {
+    if (quiz && !result && !quiz.already_played) {
+      startQuestionTimer();
+    }
+    return () => stopQuestionTimer();
+  }, [currentQ, quiz?.id]);
+
+  // ── Handle auto-advance when per-question timer expires ─────────
+  useEffect(() => {
+    if (!isAutoAdvancing.current) return;
+    isAutoAdvancing.current = false;
+    if (!quiz || result) return;
+
+    const isLast = currentQ >= quiz.questions.length - 1;
+    if (isLast) {
+      // Last question: auto-submit
+      doSubmit();
+    } else {
+      // Mark as unanswered (-1 will be used) and advance
+      setCurrentQ((prev) => prev + 1);
+    }
+  }, [questionTimeLeft]);
 
   // ── Chargement du quiz depuis l'API ─────────────────────────────
   const loadQuiz = async () => {
@@ -102,6 +177,22 @@ export default function QuizScreen() {
     const newAnswers = [...answers];
     newAnswers[currentQ] = optionIndex;
     setAnswers(newAnswers);
+
+    // Stop the per-question timer
+    stopQuestionTimer();
+
+    // Haptic feedback on selection
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    // Auto-advance after a brief delay (0.5s)
+    const isLast = quiz ? currentQ >= quiz.questions.length - 1 : false;
+    setTimeout(() => {
+      if (isLast) {
+        // On last question, do NOT auto-submit — user sees their answer, submit button is there
+      } else {
+        setCurrentQ((prev) => prev + 1);
+      }
+    }, 500);
   };
 
   const handleSubmit = async () => {
@@ -218,7 +309,7 @@ export default function QuizScreen() {
         <View style={[styles.resultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Score icon */}
           <View style={[styles.resultIconCircle, {
-            backgroundColor: pct >= 80 ? colors.success + "20" : pct >= 50 ? colors.warning + "20" : colors.danger + "20",
+            backgroundColor: withOpacity(pct >= 80 ? colors.success : pct >= 50 ? colors.warning : colors.danger, 0.13),
           }]}>
             <Ionicons
               name={pct >= 80 ? "trophy" : pct >= 50 ? "thumbs-up" : "fitness"}
@@ -356,11 +447,11 @@ export default function QuizScreen() {
             {quiz.category_name ?? t("quiz.cultureG")}
           </Text>
         </View>
-        {/* Timer */}
-        <View style={[styles.timerBadge, { backgroundColor: colors.surfaceLight }]}>
-          <Ionicons name="time-outline" size={13} color={colors.textMuted} />
-          <Text style={[styles.timerText, { color: colors.textMuted }]}>
-            {formatTimer(elapsedSeconds)}
+        {/* Per-question countdown timer */}
+        <View style={[styles.timerBadge, { backgroundColor: withOpacity(getTimerColor(questionTimeLeft, colors), 0.13) }]}>
+          <Ionicons name="time-outline" size={13} color={getTimerColor(questionTimeLeft, colors)} />
+          <Text style={[styles.timerText, { color: getTimerColor(questionTimeLeft, colors) }]}>
+            {questionTimeLeft}s
           </Text>
         </View>
         <Text style={[styles.headerCounter, { color: colors.textMuted }]}>
@@ -373,10 +464,26 @@ export default function QuizScreen() {
         <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: catColor }]} />
       </View>
 
+      {/* Per-question timer bar */}
+      <View style={[styles.questionTimerBarBg, { backgroundColor: colors.border }]}>
+        <Animated.View
+          style={[
+            styles.questionTimerBarFill,
+            {
+              backgroundColor: getTimerColor(questionTimeLeft, colors),
+              width: timerBarAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["0%", "100%"],
+              }),
+            },
+          ]}
+        />
+      </View>
+
       {/* Question */}
       <ScrollView style={styles.questionArea} contentContainerStyle={styles.questionContent}>
         {/* Difficulty badge */}
-        <View style={[styles.diffBadge, { backgroundColor: colors[diff.colorKey] + "22" }]}>
+        <View style={[styles.diffBadge, { backgroundColor: withOpacity(colors[diff.colorKey], 0.13) }]}>
           <Text style={[styles.diffText, { color: colors[diff.colorKey] }]}>{t(diff.key)}</Text>
         </View>
 
@@ -391,7 +498,7 @@ export default function QuizScreen() {
               style={[
                 styles.option,
                 { backgroundColor: colors.surface, borderColor: colors.border },
-                isSelected && { borderColor: catColor, backgroundColor: catColor + "10" },
+                isSelected && { borderColor: catColor, backgroundColor: withOpacity(catColor, 0.06) },
               ]}
               onPress={() => selectAnswer(i)}
             >
@@ -418,7 +525,7 @@ export default function QuizScreen() {
 
         {/* Fun fact — shown for easy questions after answering */}
         {question.fun_fact && answers[currentQ] !== null && (
-          <View style={[styles.funFactBox, { backgroundColor: colors.warning + "12", borderColor: colors.warning + "30" }]}>
+          <View style={[styles.funFactBox, { backgroundColor: withOpacity(colors.warning, 0.07), borderColor: withOpacity(colors.warning, 0.19) }]}>
             <Ionicons name="happy-outline" size={18} color={colors.warning} />
             <Text style={[styles.funFactText, { color: colors.textSecondary }]}>
               {question.fun_fact}
@@ -539,6 +646,18 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 4,
     borderRadius: 2,
+  },
+  // Per-question timer bar
+  questionTimerBarBg: {
+    height: 3,
+    marginHorizontal: 16,
+    borderRadius: 1.5,
+    marginTop: 4,
+    overflow: "hidden",
+  },
+  questionTimerBarFill: {
+    height: 3,
+    borderRadius: 1.5,
   },
   // Question area
   questionArea: {

@@ -5,7 +5,6 @@
 
 import React, { useState } from "react";
 import {
-  FlatList,
   Modal,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 
 import { useColors } from "@/hooks/useColors";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -73,9 +73,10 @@ export function CountrySelector({
             value={search}
             onChangeText={setSearch}
           />
-          <FlatList
+          <FlashList
             data={filtered}
             keyExtractor={(item) => item.code}
+
             renderItem={({ item }) => (
               <Pressable
                 style={[

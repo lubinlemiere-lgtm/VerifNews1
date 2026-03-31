@@ -56,7 +56,9 @@ export function useAudio(articleId: string): UseAudioReturn {
 
     const lang = useLanguageStore.getState().language;
     const resolvedLang = lang === "fr" || lang === "en" ? lang : "fr";
-    const uri = ttsApi.getAudioUrl(articleId, resolvedLang);
+    // Passer la vitesse TTS preferee au backend pour generation cote serveur
+    const speed = usePreferencesStore.getState().ttsSpeed;
+    const uri = ttsApi.getAudioUrl(articleId, resolvedLang, speed);
 
     setIsLoading(true);
     try {

@@ -21,7 +21,12 @@ def _is_configured() -> bool:
 async def send_email(to: str, subject: str, html_body: str) -> bool:
     """Envoie un email. Retourne True si envoye, False sinon."""
     if not _is_configured():
-        logger.warning("SMTP not configured — email not sent to %s", to)
+        logger.warning(
+            "⚠️ SMTP not configured - password reset emails will NOT be sent. "
+            "Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD in environment. "
+            "(attempted recipient: %s)",
+            to,
+        )
         return False
 
     msg = EmailMessage()

@@ -34,6 +34,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // ── Validation et inscription ─────────────────────────────────────
   const handleRegister = async () => {
@@ -54,6 +55,10 @@ export default function RegisterScreen() {
     }
     if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
       setError(t("register.passwordWeak"));
+      return;
+    }
+    if (!acceptedTerms) {
+      setError(t("register.acceptTerms"));
       return;
     }
 
@@ -169,7 +174,48 @@ export default function RegisterScreen() {
             </Text>
           </View>
 
-          <Button title={t("register.create")} onPress={handleRegister} loading={loading} />
+          {/* ── Checkbox CGU ─────────────────────────────────────────── */}
+          <Pressable
+            style={styles.termsRow}
+            onPress={() => { setAcceptedTerms(!acceptedTerms); setError(""); }}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: acceptedTerms ? colors.primary : "transparent",
+                  borderColor: acceptedTerms ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              {acceptedTerms && (
+                <Ionicons name="checkmark" size={14} color="#fff" />
+              )}
+            </View>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}>
+              {t("register.acceptPrefix")}{" "}
+              <Text
+                style={[styles.termsLink, { color: colors.primary }]}
+                onPress={() => router.push("/terms")}
+              >
+                {t("register.termsLink")}
+              </Text>
+              {" "}{t("register.and")}{" "}
+              <Text
+                style={[styles.termsLink, { color: colors.primary }]}
+                onPress={() => router.push("/privacy")}
+              >
+                {t("register.privacyLink")}
+              </Text>
+            </Text>
+          </Pressable>
+
+          <Button
+            title={t("register.create")}
+            onPress={handleRegister}
+            loading={loading}
+            disabled={!acceptedTerms}
+          />
         </View>
 
         {/* ── Lien connexion ───────────────────────────────────────── */}
@@ -259,13 +305,36 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     fontSize: 16,
-    // @ts-ignore — supprime l'outline orange sur web
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
   hint: {
     fontSize: 11,
     paddingLeft: 4,
     marginTop: 2,
+  },
+  termsRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
   link: {
     marginTop: 28,

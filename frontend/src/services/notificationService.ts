@@ -48,7 +48,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
   try {
     // Les notifications ne fonctionnent que sur un vrai appareil
     if (!Device.isDevice) {
-      console.log("Push notifications require a physical device");
+      if (__DEV__) console.log("Push notifications require a physical device");
       return null;
     }
 
@@ -66,7 +66,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
 
     if (finalStatus !== "granted") {
-      console.log("Notification permission denied");
+      if (__DEV__) console.log("Notification permission denied");
       return null;
     }
 
@@ -84,7 +84,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       projectId,
     });
 
-    console.log("Push token:", tokenData.data);
+    if (__DEV__) console.log("Push token:", tokenData.data);
     return tokenData.data;
   } catch (error) {
     console.error("Error registering for push notifications:", error);

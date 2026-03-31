@@ -22,6 +22,7 @@
         "backgroundColor": "#1A1A2E"
       },
       "package": "com.verifnews.app",
+      "newArchEnabled": false,
       "permissions": [
         "INTERNET"
       ]
@@ -40,8 +41,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3265708280232482~1974668740",
-          "iosAppId": "ca-app-pub-3265708280232482~1974668740"
+          "androidAppId": "ca-app-pub-3265708280232482~1974668740"
         }
       ]
     ],

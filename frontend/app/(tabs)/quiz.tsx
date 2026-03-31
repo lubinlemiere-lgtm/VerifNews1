@@ -5,7 +5,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlatList,
   Platform,
   Pressable,
   RefreshControl,
@@ -13,6 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -23,6 +23,7 @@ import type { QuizSummary } from "@/types/quiz";
 import { QuizCard } from "@/components/QuizCard";
 import { TabBarOverlay } from "@/components/TabBarOverlay";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorRetry } from "@/components/ui/ErrorRetry";
 import { useQuizHistoryStore } from "@/store/quizHistoryStore";
 
 // ── Composant principal ─────────────────────────────────────────────
@@ -178,18 +179,20 @@ export default function QuizTabScreen() {
   // ── Etat vide / erreur ──────────────────────────────────────────
   const emptyComponent = loading ? (
     <LoadingSpinner />
+  ) : error ? (
+    <ErrorRetry onRetry={loadQuizzes} />
   ) : (
     <View style={styles.emptyContainer}>
       <Ionicons
-        name={error ? "cloud-offline-outline" : "game-controller-outline"}
+        name="game-controller-outline"
         size={56}
         color={colors.textMuted}
       />
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        {error ? t("error.title") : t("quiz.emptyTitle")}
+        {t("quiz.emptyTitle")}
       </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        {error ? t("error.message") : t("quiz.emptySubtitle")}
+        {t("quiz.emptySubtitle")}
       </Text>
     </View>
   );
@@ -197,9 +200,10 @@ export default function QuizTabScreen() {
   // ── Rendu principal ─────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <FlatList
+      <FlashList
         data={weeklyQuizzes}
         keyExtractor={(item) => String(item.quiz_id)}
+
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
             <QuizCard quiz={item} />

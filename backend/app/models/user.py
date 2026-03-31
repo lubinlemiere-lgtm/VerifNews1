@@ -28,4 +28,10 @@ class User(Base):
     push_token = Column(String, nullable=True)
     push_token_updated_at = Column(DateTime, nullable=True)
 
+    # Preferences de notification globales (synchro frontend → backend)
+    notify_breaking_news = Column(Boolean, default=True, server_default="true")
+    notify_daily_digest = Column(Boolean, default=True, server_default="true")
+    notify_quiz_reminders = Column(Boolean, default=False, server_default="false")
+    notify_category_alerts = Column(Boolean, default=True, server_default="true")
+
     preferences = relationship("UserPreference", back_populates="user", cascade="all, delete-orphan")

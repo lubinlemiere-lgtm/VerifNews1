@@ -7,7 +7,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CategoryColors } from "@/constants/colors";
@@ -28,25 +28,29 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { ProofBadge } from "@/components/ProofBadge";
 import { SourceList } from "@/components/SourceList";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorRetry } from "@/components/ui/ErrorRetry";
 import { AuthGateModal } from "@/components/ui/AuthGateModal";
 import { useAuthStore } from "@/store/authStore";
 import { lightHaptic } from "@/utils/haptics";
 import { shareArticle } from "@/utils/sharing";
 import { useTextSizeStore } from "@/store/textSizeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { usePreferencesStore } from "@/store/preferencesStore";
 
 export default function ArticleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { article, isLoading } = useArticle(id);
-  const { isBookmarked, toggleBookmark } = useBookmarkStore();
+  const { article, isLoading, error, refetch } = useArticle(id);
+  const isBookmarked = useBookmarkStore((s) => s.isBookmarked);
+  const toggleBookmark = useBookmarkStore((s) => s.toggleBookmark);
   const { t, language } = useTranslation();
   const colors = useColors();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const getScaled = useTextSizeStore((s) => s.getScaled);
   const markArticleRead = useGamificationStore((s) => s.markArticleRead);
+  const ttsEnabled = usePreferencesStore((s) => s.ttsEnabled);
 
   // Marquer l'article comme lu quand il est charge
   useEffect(() => {
@@ -69,15 +73,19 @@ export default function ArticleDetailScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t("article.header")}</Text>
           <View style={{ width: 34 }} />
         </View>
-        <View style={styles.notFoundBody}>
-          <Ionicons name="document-text-outline" size={56} color={colors.textMuted} />
-          <Text style={[styles.notFoundTitle, { color: colors.text }]}>
-            {t("article.notFound")}
-          </Text>
-          <Text style={[styles.notFoundDesc, { color: colors.textSecondary }]}>
-            {t("article.notFoundDesc")}
-          </Text>
-        </View>
+        {error ? (
+          <ErrorRetry onRetry={() => refetch()} />
+        ) : (
+          <View style={styles.notFoundBody}>
+            <Ionicons name="document-text-outline" size={56} color={colors.textMuted} />
+            <Text style={[styles.notFoundTitle, { color: colors.text }]}>
+              {t("article.notFound")}
+            </Text>
+            <Text style={[styles.notFoundDesc, { color: colors.textSecondary }]}>
+              {t("article.notFoundDesc")}
+            </Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -94,8 +102,8 @@ export default function ArticleDetailScreen() {
     shareArticle({
       articleId: article.id,
       title: article.title,
-      summary: article.summary,
-      originalUrl: article.original_url,
+      summary: article.summary ?? undefined,
+      originalUrl: article.original_url ?? undefined,
       sharedViaText: t("article.sharedVia"),
     });
   };
@@ -145,7 +153,7 @@ export default function ArticleDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {article.image_url && (
-          <Image source={{ uri: article.image_url }} style={styles.image} />
+          <Image source={{ uri: article.image_url }} style={styles.image} contentFit="cover" transition={300} />
         )}
 
         <View style={styles.body}>
@@ -181,7 +189,7 @@ export default function ArticleDetailScreen() {
             </Text>
           )}
 
-          <AudioPlayer articleId={article.id} />
+          {ttsEnabled && <AudioPlayer articleId={article.id} />}
 
           {article.summary && (
             <View style={[styles.summaryBox, { backgroundColor: colors.surfaceLight, borderLeftColor: colors.primary }]}>

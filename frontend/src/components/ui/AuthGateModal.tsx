@@ -18,6 +18,7 @@ import {
 import { useRouter } from "expo-router";
 
 import { useColors } from "@/hooks/useColors";
+import { useThemeStore } from "@/store/themeStore";
 import { useTranslation } from "@/hooks/useTranslation";
 
 // ── Props ───────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const FEATURE_ICONS: Record<AuthGateFeature, keyof typeof Ionicons.glyphMap> = {
 export function AuthGateModal({ visible, onClose, feature }: AuthGateModalProps) {
   const router = useRouter();
   const colors = useColors();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const { t } = useTranslation();
   const scale = useRef(new Animated.Value(0.85)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -96,8 +98,9 @@ export function AuthGateModal({ visible, onClose, feature }: AuthGateModalProps)
                 // Glass shadow
                 ...(Platform.OS === "web"
                   ? ({
-                      boxShadow:
-                        "0 12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1)",
+                      boxShadow: isDark
+                        ? "0 12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1)"
+                        : "0 12px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
                     } as any)
                   : {}),
               },

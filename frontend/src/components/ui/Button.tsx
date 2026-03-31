@@ -13,16 +13,19 @@ interface ButtonProps extends PressableProps {
   title: string;
   variant?: "primary" | "secondary" | "outline";
   loading?: boolean;
+  disabled?: boolean;
 }
 
 export function Button({
   title,
   variant = "primary",
   loading = false,
+  disabled = false,
   style,
   ...props
 }: ButtonProps) {
   const colors = useColors();
+  const isDisabled = loading || disabled;
   const bgColor =
     variant === "primary"
       ? colors.primary
@@ -39,8 +42,13 @@ export function Button({
 
   return (
     <Pressable
-      style={[styles.button, { backgroundColor: bgColor, borderColor }, style as any]}
-      disabled={loading}
+      style={[
+        styles.button,
+        { backgroundColor: bgColor, borderColor },
+        isDisabled && { opacity: 0.5 },
+        style as any,
+      ]}
+      disabled={isDisabled}
       accessibilityRole="button"
       {...props}
     >
@@ -61,8 +69,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    // @ts-ignore — supprime l'outline orange sur web
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
   text: {
     fontSize: 16,

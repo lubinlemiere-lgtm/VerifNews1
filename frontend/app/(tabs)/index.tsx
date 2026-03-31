@@ -6,7 +6,8 @@
 // ###########################################################################
 
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -20,19 +21,23 @@ import { useCategories } from "@/hooks/useCategories";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useWeather } from "@/hooks/useWeather";
 import { usePreferencesStore } from "@/store/preferencesStore";
+import { withOpacity } from "@/utils/colors";
 import { useDrawerStore } from "@/store/drawerStore";
 import { CategoryChip } from "@/components/CategoryChip";
 import { CountrySelector } from "@/components/CountrySelector";
 import { NewsFeed } from "@/components/NewsFeed";
+import { ErrorRetry } from "@/components/ui/ErrorRetry";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { QuizSection } from "@/components/QuizSection";
 import { TabBarOverlay } from "@/components/TabBarOverlay";
 
-type FeedMode = "recent" | "month" | "year";
+type FeedMode = "recent" | "month" | "year" | "trending";
 
-const PERIOD_OPTIONS: { key: FeedMode; labelKey: string; icon: string }[] = [
+const ALL_PERIOD_OPTIONS: { key: FeedMode; labelKey: string; icon: string; onlyAll?: boolean; onlyCategory?: boolean }[] = [
   { key: "recent", labelKey: "home.recent", icon: "time-outline" },
   { key: "month", labelKey: "home.topMonth", icon: "calendar-outline" },
   { key: "year", labelKey: "home.topYear", icon: "trophy-outline" },
+  { key: "trending", labelKey: "home.trending", icon: "flame-outline", onlyAll: true },
 ];
 
 // Country code → flag emoji
@@ -55,6 +60,17 @@ function formatDate(lang: string): string {
   const days = lang === "fr" ? DAYS_FR : DAYS_EN;
   const months = lang === "fr" ? MONTHS_FR : MONTHS_EN;
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function formatRelativeTime(isoString: string, lang: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return lang === "fr" ? "a l'instant" : "just now";
+  if (minutes < 60) return lang === "fr" ? `il y a ${minutes}min` : `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return lang === "fr" ? `il y a ${hours}h` : `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return lang === "fr" ? `il y a ${days}j` : `${days}d ago`;
 }
 
 export default function HomeScreen() {
@@ -120,11 +136,32 @@ export default function HomeScreen() {
     countryPriority: isPolitics,
   });
 
-  // Top feed (month or year) — only active when mode is not "recent"
+  // Compute visible period options based on selected category
+  const periodOptions = ALL_PERIOD_OPTIONS.filter((opt) => {
+    if (opt.onlyAll && selectedCategory) return false; // "trending" only when "Tout"
+    return true;
+  });
+
+  // Reset feedMode if current mode is no longer available
+  useEffect(() => {
+    const available = ALL_PERIOD_OPTIONS.filter((opt) => {
+      if (opt.onlyAll && selectedCategory) return false;
+      return true;
+    });
+    if (!available.find((o) => o.key === feedMode)) {
+      setFeedMode("recent");
+    }
+  }, [selectedCategory]);
+
+  // Top feed (month/year/trending) — only active when mode is not "recent"
+  const topPeriod: "day" | "week" | "month" | "year" =
+    feedMode === "trending" ? "year" : feedMode === "year" ? "year" : "month";
+  const topLimit = feedMode === "month" || feedMode === "year" ? 10 : 15;
   const topFeed = useTopFeed({
-    period: feedMode === "year" ? "year" : "month",
-    category: selectedCategory,
+    period: topPeriod,
+    category: feedMode === "trending" ? undefined : selectedCategory,
     enabled: feedMode !== "recent",
+    limit: topLimit,
   });
 
   // Pick the active feed based on mode
@@ -188,7 +225,7 @@ export default function HomeScreen() {
           <Ionicons name="flag-outline" size={14} color={colors.textSecondary} />
           <Text style={[styles.countryLabel, { color: colors.textSecondary }]}>{t("home.countryPicker")}</Text>
           <Pressable
-            style={[styles.countryButton, { backgroundColor: colors.surface, borderColor: colors.primary + "40" }]}
+            style={[styles.countryButton, { backgroundColor: colors.surface, borderColor: withOpacity(colors.primary, 0.25) }]}
             onPress={() => setCountryPickerVisible(true)}
           >
             <Text style={styles.countryFlag}>{countryFlag(selectedCountry)}</Text>
@@ -207,6 +244,8 @@ export default function HomeScreen() {
           name={
             feedMode === "recent"
               ? "pulse"
+              : feedMode === "trending"
+              ? "flame"
               : feedMode === "month"
               ? "calendar"
               : "trophy"
@@ -217,6 +256,8 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           {feedMode === "recent"
             ? t("home.latestNews")
+            : feedMode === "trending"
+            ? t("home.trendingToday")
             : feedMode === "month"
             ? t("home.topOfMonth")
             : t("home.topOfYear")}
@@ -229,17 +270,27 @@ export default function HomeScreen() {
         >
           <Ionicons
             name={
-              PERIOD_OPTIONS.find((o) => o.key === feedMode)?.icon as any
+              periodOptions.find((o) => o.key === feedMode)?.icon as any
             }
             size={13}
             color={colors.primary}
           />
           <Text style={[styles.periodDropdownText, { color: colors.primary }]}>
-            {t(PERIOD_OPTIONS.find((o) => o.key === feedMode)?.labelKey ?? "home.recent")}
+            {t(periodOptions.find((o) => o.key === feedMode)?.labelKey ?? "home.recent")}
           </Text>
           <Ionicons name="chevron-down" size={12} color={colors.primary} />
         </Pressable>
       </View>
+
+      {/* Indicateur cache offline */}
+      {recentFeed.isFromCache && recentFeed.cacheTimestamp && (
+        <View style={styles.cacheIndicator}>
+          <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+          <Text style={[styles.cacheText, { color: colors.textMuted }]}>
+            {t("network.cachedData", { time: formatRelativeTime(recentFeed.cacheTimestamp, language) })}
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -272,14 +323,14 @@ export default function HomeScreen() {
           <Image
             source={{ uri: bgUrl }}
             style={styles.bgImage}
-            resizeMode="cover"
+            contentFit="cover"
           />
-          {/* Overlay: sombre en haut (lisibilite), transparent en bas (image visible) */}
+          {/* Overlay: attenue en haut (lisibilite), transparent en bas (image visible) */}
           <LinearGradient
             colors={[
               colors.background,
-              colors.background + "E6",
-              "rgba(0,0,0,0.30)",
+              withOpacity(colors.background, 0.9),
+              withOpacity(colors.background, 0.3),
               "transparent",
             ]}
             locations={[0, 0.35, 0.65, 1]}
@@ -288,19 +339,26 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
-      <NewsFeed
-        articles={activeFeed.articles}
-        isLoading={activeFeed.isLoading}
-        isRefreshing={activeFeed.isRefreshing}
-        hasNext={activeFeed.hasNext}
-        onRefresh={() => activeFeed.refetch()}
-        onLoadMore={() => activeFeed.fetchNextPage()}
-        ListHeaderComponent={header}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-      />
+      {activeFeed.error && activeFeed.articles.length === 0 ? (
+        <View style={{ flex: 1 }}>
+          {header}
+          <ErrorRetry onRetry={() => activeFeed.refetch()} />
+        </View>
+      ) : (
+        <NewsFeed
+          articles={activeFeed.articles}
+          isLoading={activeFeed.isLoading}
+          isRefreshing={activeFeed.isRefreshing}
+          hasNext={activeFeed.hasNext}
+          onRefresh={() => activeFeed.refetch()}
+          onLoadMore={() => activeFeed.fetchNextPage()}
+          ListHeaderComponent={header}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+        />
+      )}
 
       {/* ── Header fixe superpose (visuel uniquement) ──────── */}
       <Animated.View
@@ -379,14 +437,14 @@ export default function HomeScreen() {
           onPress={() => setPeriodPickerVisible(false)}
         >
           <View style={[styles.periodMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {PERIOD_OPTIONS.map((opt) => {
+            {periodOptions.map((opt) => {
               const isActive = feedMode === opt.key;
               return (
                 <Pressable
                   key={opt.key}
                   style={[
                     styles.periodMenuItem,
-                    isActive && { backgroundColor: colors.primary + "15" },
+                    isActive && { backgroundColor: withOpacity(colors.primary, 0.08) },
                   ]}
                   onPress={() => {
                     setFeedMode(opt.key);
@@ -419,6 +477,9 @@ export default function HomeScreen() {
 
       {/* Frosted glass tab bar overlay */}
       <TabBarOverlay />
+
+      {/* Bandeau offline */}
+      <OfflineBanner />
     </View>
   );
 }
@@ -593,5 +654,18 @@ const styles = StyleSheet.create({
   periodMenuText: {
     fontSize: 15,
     fontWeight: "500",
+  },
+  // ── Cache indicator (mode hors-ligne) ─────────────────────────
+  cacheIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+  },
+  cacheText: {
+    fontSize: 11,
+    fontWeight: "500",
+    fontStyle: "italic",
   },
 });

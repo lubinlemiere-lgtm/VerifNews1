@@ -59,10 +59,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     set({ [key]: !current } as any);
 
     // Persist
-    const { breakingNews, dailyDigest, quizReminders, categoryAlerts } = {
-      ...get(),
-      [key]: !current,
-    };
+    const updated = { ...get(), [key]: !current } as NotificationStore;
+    const { breakingNews, dailyDigest, quizReminders, categoryAlerts } = updated;
     await AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ breakingNews, dailyDigest, quizReminders, categoryAlerts }),

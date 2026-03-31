@@ -26,7 +26,7 @@ interface LatestFeedParams {
 }
 
 interface TopFeedParams {
-  period?: "week" | "month" | "year";
+  period?: "day" | "week" | "month" | "year";
   category?: string;
   page?: number;
   limit?: number;

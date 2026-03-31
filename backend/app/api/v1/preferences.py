@@ -1,9 +1,9 @@
 # ###########################################################################
-# # API Preferences — Gestion categories et pays utilisateur
-# # GET /categories — Liste toutes les categories
+# # API Preferences — Gestion categories, pays et notifications utilisateur
 # # GET /preferences — Abonnements de l'utilisateur
 # # PUT /preferences — Met a jour les categories abonnees
 # # PUT /preferences/country — Met a jour le pays prefere
+# # PUT /preferences/notify — Met a jour les notifications (globales ou par categorie)
 # ###########################################################################
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,6 +27,16 @@ class PreferencesUpdate(BaseModel):
 
 class CountryUpdate(BaseModel):
     country_code: str
+
+
+class NotifyUpdate(BaseModel):
+    """Corps de requete pour PUT /preferences/notify.
+    - pref_key + enabled : preference globale (breaking_news, daily_digest, etc.)
+    - category_id + enabled : notification par categorie
+    """
+    pref_key: str | None = None
+    category_id: int | None = None
+    enabled: bool = False
 
 
 class PreferenceItem(BaseModel):
@@ -92,37 +102,57 @@ async def update_country(
     return {"status": "ok", "country_code": data.country_code}
 
 
-# ── Notification par categorie ──────────────────────────────────────────
+# ── Cles de notification globales valides ──────────────────────────────
+GLOBAL_NOTIFY_KEYS = {
+    "breaking_news": "notify_breaking_news",
+    "daily_digest": "notify_daily_digest",
+    "quiz_reminders": "notify_quiz_reminders",
+    "category_alerts": "notify_category_alerts",
+}
+
+
+# ── Notification (globale ou par categorie) ────────────────────────────
 @router.put("/notify")
 async def update_notification_prefs(
-    body: dict,
+    body: NotifyUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update notification_enabled for user's category preferences."""
-    category_id = body.get("category_id")
-    enabled = body.get("enabled", False)
+    """Met a jour les preferences de notification.
+    - pref_key + enabled : preference globale sur le modele User
+    - category_id + enabled : notification par categorie sur UserPreference
+    """
 
-    if category_id is None:
-        raise HTTPException(400, "category_id is required")
+    # ── Preference globale ─────────────────────────────────────────────
+    if body.pref_key is not None:
+        column_name = GLOBAL_NOTIFY_KEYS.get(body.pref_key)
+        if column_name is None:
+            raise HTTPException(400, f"pref_key invalide: {body.pref_key}")
+        setattr(current_user, column_name, body.enabled)
+        await db.commit()
+        return {"status": "ok"}
 
-    stmt = select(UserPreference).where(
-        UserPreference.user_id == current_user.id,
-        UserPreference.category_id == category_id,
-    )
-    result = await db.execute(stmt)
-    pref = result.scalar_one_or_none()
-
-    if pref:
-        pref.notification_enabled = enabled
-    else:
-        pref = UserPreference(
-            user_id=current_user.id,
-            category_id=category_id,
-            is_subscribed=True,
-            notification_enabled=enabled,
+    # ── Preference par categorie ───────────────────────────────────────
+    if body.category_id is not None:
+        stmt = select(UserPreference).where(
+            UserPreference.user_id == current_user.id,
+            UserPreference.category_id == body.category_id,
         )
+        result = await db.execute(stmt)
+        pref = result.scalar_one_or_none()
 
-    db.add(pref)
-    await db.commit()
-    return {"status": "ok"}
+        if pref:
+            pref.notification_enabled = body.enabled
+        else:
+            pref = UserPreference(
+                user_id=current_user.id,
+                category_id=body.category_id,
+                is_subscribed=True,
+                notification_enabled=body.enabled,
+            )
+
+        db.add(pref)
+        await db.commit()
+        return {"status": "ok"}
+
+    raise HTTPException(400, "pref_key ou category_id requis")
