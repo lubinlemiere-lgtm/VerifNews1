@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     TMDB_API_KEY: str = ""
 
     # ── TTS et embeddings ─────────────────────────────────────────────
-    TTS_CACHE_DIR: str = "./audio_cache"
+    TTS_CACHE_DIR: str = "/tmp/audio_cache"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     USE_TFIDF_ONLY: bool = True  # True par defaut pour Render 512MB (sentence-transformers ~400MB)
 

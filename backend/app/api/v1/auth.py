@@ -302,7 +302,7 @@ async def update_push_token(
 ):
     """Store/update the user's Expo push token."""
     token = body.token
-    if not token.startswith("ExponentPushToken["):
+    if not token.startswith("ExponentPushToken[") or not token.endswith("]"):
         raise HTTPException(400, "Invalid push token format")
 
     current_user.push_token = token
