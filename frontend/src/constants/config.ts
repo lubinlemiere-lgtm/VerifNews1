@@ -23,7 +23,7 @@ export const API_BASE_URL = __DEV__
   ? `http://${DEV_HOST}:8000/api/v1`
   : "https://verifnews-api.onrender.com/api/v1";
 
-export const SUPPORT_EMAIL = "contact@verifnews.app";
+export const SUPPORT_EMAIL = "contact.verifnews@gmail.com";
 export const APP_VERSION = "1.0.0";
 
 // # Liens store — a remplacer par les vrais liens une fois publie
