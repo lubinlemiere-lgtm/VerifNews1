@@ -71,7 +71,7 @@ export default function SearchScreen() {
           data={results}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <NewsCard article={item} />}
-
+          estimatedItemSize={216}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             hasSearched && results.length > 0 ? (

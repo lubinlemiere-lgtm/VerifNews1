@@ -52,7 +52,7 @@ export default function TabsLayout() {
           name="index"
           options={{ title: t("tabs.feed"), headerShown: false }}
         />
-        <Tabs.Screen name="search" options={{ href: null }} />
+        <Tabs.Screen name="search" options={{ title: t("tabs.search"), headerShown: false }} />
         <Tabs.Screen name="quiz" options={{ title: t("tabs.quiz") }} />
         <Tabs.Screen name="categories" options={{ href: null }} />
         <Tabs.Screen name="bookmarks" options={{ title: t("tabs.saved") }} />

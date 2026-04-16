@@ -465,12 +465,9 @@ export default function SettingsScreen() {
                 label={t("settings.exportData")}
                 onPress={async () => {
                   try {
-                    await api.get("/auth/export");
-                    Alert.alert(
-                      t("settings.exportData"),
-                      t("settings.exportSuccess"),
-                      [{ text: "OK" }]
-                    );
+                    const { data } = await api.get("/auth/export");
+                    const summary = `${t("settings.exportData")}\n\n📧 ${data.user?.email ?? ""}\n📚 ${data.bookmarks?.length ?? 0} ${t("tabs.saved").toLowerCase()}\n🗓️ ${new Date(data.exported_at).toLocaleDateString()}`;
+                    Alert.alert(t("settings.exportData"), summary, [{ text: "OK" }]);
                   } catch {
                     Alert.alert(t("settings.error"), t("settings.exportFailed"));
                   }

@@ -100,7 +100,7 @@ function ItemSeparator() {
 
 // ── Main component ────────────────────────────────────────────────────────
 export function ProfileDrawer() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -415,7 +415,7 @@ export function ProfileDrawer() {
                 icon="share-social-outline"
                 label={t("settings.shareApp")}
                 onPress={async () => {
-                  const msg = APP_SHARE_MESSAGE_FR + PLAY_STORE_URL;
+                  const msg = (language === "fr" ? APP_SHARE_MESSAGE_FR : APP_SHARE_MESSAGE_EN) + PLAY_STORE_URL;
                   try { await Share.share({ message: msg }); } catch {}
                 }}
               />
@@ -524,7 +524,7 @@ export function ProfileDrawer() {
                 icon="share-social-outline"
                 label={t("settings.shareApp")}
                 onPress={async () => {
-                  const msg = APP_SHARE_MESSAGE_FR + PLAY_STORE_URL;
+                  const msg = (language === "fr" ? APP_SHARE_MESSAGE_FR : APP_SHARE_MESSAGE_EN) + PLAY_STORE_URL;
                   try { await Share.share({ message: msg }); } catch {}
                 }}
               />

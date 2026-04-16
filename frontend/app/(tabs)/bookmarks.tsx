@@ -30,7 +30,7 @@ export default function BookmarksScreen() {
         data={bookmarks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <NewsCard article={item} />}
-
+        estimatedItemSize={216}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>

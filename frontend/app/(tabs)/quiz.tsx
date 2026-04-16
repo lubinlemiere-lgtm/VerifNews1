@@ -203,7 +203,7 @@ export default function QuizTabScreen() {
       <FlashList
         data={weeklyQuizzes}
         keyExtractor={(item) => String(item.quiz_id)}
-
+        estimatedItemSize={140}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
             <QuizCard quiz={item} />

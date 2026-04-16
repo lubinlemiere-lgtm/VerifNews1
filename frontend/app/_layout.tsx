@@ -116,6 +116,10 @@ function RootLayoutInner() {
           options={{ presentation: "card" }}
         />
         <Stack.Screen
+          name="settings"
+          options={{ presentation: "card" }}
+        />
+        <Stack.Screen
           name="(auth)"
           options={{ presentation: "modal" }}
         />

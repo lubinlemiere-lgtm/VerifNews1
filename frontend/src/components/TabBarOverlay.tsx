@@ -16,6 +16,7 @@ import { useThemeStore } from "@/store/themeStore";
 
 const TAB_ITEMS = [
   { route: "/(tabs)", name: "index", active: "reader", inactive: "reader-outline" },
+  { route: "/(tabs)/search", name: "search", active: "search", inactive: "search-outline" },
   { route: "/(tabs)/quiz", name: "quiz", active: "game-controller", inactive: "game-controller-outline" },
   { route: "/(tabs)/bookmarks", name: "bookmarks", active: "bookmark", inactive: "bookmark-outline" },
 ] as const;
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   barContainer: {
-    width: 210,
+    width: 272,
     height: 58,
     borderRadius: 29,
     overflow: "hidden",

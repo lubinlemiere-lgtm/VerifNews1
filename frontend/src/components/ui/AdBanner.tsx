@@ -46,8 +46,8 @@ try {
 const NATIVE_AD_UNIT_ID = __DEV__
   ? TestIds?.NATIVE ?? "ca-app-pub-3940256099942544/2247696110"
   : Platform.select({
-      android: "ca-app-pub-3265708280232482/3462712488",
-      ios: "ca-app-pub-3265708280232482/3462712488", // TODO: Remplacer par ton iOS ID si different
+      android: "ca-app-pub-3265708280232482/1668739929",
+      ios: "ca-app-pub-3265708280232482/1668739929", // TODO: Remplacer par ton iOS ID si different
       default: "",
     }) ?? "";
 
