@@ -5,6 +5,8 @@
 # # GET /reactions/me — Toutes les reactions de l'utilisateur connecte
 # ###########################################################################
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -37,7 +39,7 @@ class UserReactionResponse(BaseModel):
 # ── POST /articles/{article_id}/reactions ────────────────────────────────
 @router.post("/articles/{article_id}/reactions")
 async def set_reaction(
-    article_id: str,
+    article_id: uuid.UUID,
     data: ReactionRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -88,7 +90,7 @@ async def set_reaction(
 # ── GET /articles/{article_id}/reactions ─────────────────────────────────
 @router.get("/articles/{article_id}/reactions", response_model=ReactionCountResponse)
 async def get_reactions(
-    article_id: str,
+    article_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
     """Compter les likes/dislikes d'un article."""
