@@ -451,7 +451,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
   fr: {
     // Home screen
-    "home.recent": "Recent",
+    "home.recent": "Recents",
     "home.trending": "Tendances",
     "home.topMonth": "Top Mois",
     "home.topYear": "Top Annee",

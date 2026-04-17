@@ -68,6 +68,7 @@ export function NewsFeed({
       data={articles}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
+      estimatedItemSize={216}
       contentContainerStyle={styles.list}
       ListHeaderComponent={ListHeaderComponent}
       refreshControl={

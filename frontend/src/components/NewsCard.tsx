@@ -44,9 +44,9 @@ interface NewsCardProps {
   isFeatured?: boolean;
 }
 
-// ── Temps relatif (reutilise du composant precedent) ────────────────────
+// ── Temps relatif — adapte a la langue ─────────────────────────────────
 function useTimeAgo() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   return (dateStr: string | null): string => {
     if (!dateStr) return "";
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -56,8 +56,9 @@ function useTimeAgo() {
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h`;
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d`;
-    return `${Math.floor(days / 7)}w`;
+    const isFr = language === "fr";
+    if (days < 7) return `${days}${isFr ? "j" : "d"}`;
+    return `${Math.floor(days / 7)}${isFr ? "sem" : "w"}`;
   };
 }
 
